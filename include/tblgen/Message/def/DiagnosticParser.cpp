@@ -84,7 +84,7 @@
 //         noteMsgOut << "{ " << enumVal << ", \"\\\"" << str << "\\\"\"},";
 //      }
 //      else {
-//         llvm_unreachable("unknwon diagnostic type");
+//         unreachable("unknwon diagnostic type");
 //      }
 //   }
 //

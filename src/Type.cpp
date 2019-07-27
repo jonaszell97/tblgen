@@ -61,7 +61,7 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Type const* Ty)
          str << "code";
          break;
       default:
-         llvm_unreachable("unhandled type");
+         unreachable("unhandled type");
    }
 
    return str;

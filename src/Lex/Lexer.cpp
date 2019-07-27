@@ -252,7 +252,7 @@ Token Lexer::lexNextToken()
 //                      II.getKeywordTokenKind());
 //      }
 
-      llvm_unreachable("what preprocessor?");
+      unreachable("what preprocessor?");
    }
    // dollar identifier
    case '$': {
@@ -825,7 +825,7 @@ void Lexer::lexDiagnostic()
                         break;
                      }
                      case '\0':
-                        llvm_unreachable("unexpected end of file or nul "
+                        unreachable("unexpected end of file or nul "
                                          "character!");
                      default:
                         break;
@@ -1258,7 +1258,7 @@ Token Lexer::skipMultiLineComment()
       }
    }
 
-   llvm_unreachable("file is not zero terminated!");
+   unreachable("file is not zero terminated!");
 }
 
 void Lexer::expect_impl(tok::TokenType ty)

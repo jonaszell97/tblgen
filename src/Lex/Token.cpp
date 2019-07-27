@@ -92,7 +92,7 @@ SourceLocation Token::getEndLoc() const
       Length = (unsigned)getIdentifierInfo()->getIdentifier().size();
       break;
    default:
-      llvm_unreachable("bad token kind");
+      unreachable("bad token kind");
    }
 
    return SourceLocation(loc.getOffset() + Length - 1);
@@ -186,7 +186,7 @@ void Token::print(llvm::raw_ostream &OS) const
       OS << "<decl " << getDecl() << ">";
       break;
    default:
-      llvm_unreachable("unhandled token kind");
+      unreachable("unhandled token kind");
 
 #  include "tblgen/Lex/Tokens.def"
    }

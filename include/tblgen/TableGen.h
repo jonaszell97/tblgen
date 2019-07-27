@@ -5,52 +5,14 @@
 #ifndef TBLGEN_TABLEGEN_H
 #define TBLGEN_TABLEGEN_H
 
-#include "tblgen/Type.h"
 #include "tblgen/Basic/IdentifierInfo.h"
 #include "tblgen/Lex/SourceLocation.h"
+#include "tblgen/Support/Allocator.h"
+#include "tblgen/Type.h"
 
-#include <llvm/Support/Allocator.h>
-#include <llvm/ADT/DenseMap.h>
+#include <unordered_map>
 
-namespace tblgen {
-
-class Class;
-
-} // namespace tblgen
-
-namespace llvm {
-
-template <typename T>
-struct PointerLikeTypeTraits;
-
-template<>
-struct PointerLikeTypeTraits< ::tblgen::Type*> {
-public:
-   static inline void *getAsVoidPointer(::tblgen::Type *P) { return P; }
-   static inline ::tblgen::Type* getFromVoidPointer(void *P)
-   {
-      return static_cast< ::tblgen::Type*>(P);
-   }
-
-   // no specific alignment is enforced on Classes or Types
-   enum { NumLowBitsAvailable = 0 };
-};
-
-template<>
-struct PointerLikeTypeTraits< ::tblgen::Class*> {
-public:
-   static inline void *getAsVoidPointer(::tblgen::Class *P) { return P; }
-   static inline ::tblgen::Class* getFromVoidPointer(void *P)
-   {
-      return static_cast< ::tblgen::Class*>(P);
-   }
-
-   // no specific alignment is enforced on Classes or Types
-   enum { NumLowBitsAvailable = 0 };
-};
-
-} // namespace llvm
-
+#define unreachable(MSG) assert(false && MSG)
 
 namespace tblgen {
 
@@ -60,8 +22,10 @@ namespace fs {
 
 class DiagnosticsEngine;
 class Record;
-class Class;
 class RecordKeeper;
+class Class;
+
+using TableGenBackend = void(std::ostream&, RecordKeeper&);
 
 class TableGen {
 public:
@@ -87,7 +51,7 @@ public:
 
    void Deallocate(void *Ptr) const {}
 
-   llvm::BumpPtrAllocator &getAllocator() const
+   support::BumpPtrAllocator &getAllocator() const
    {
       return Allocator;
    }
@@ -105,7 +69,7 @@ public:
 
    struct FinalizeResult {
       RecordFinalizeStatus status;
-      llvm::StringRef missingOrDuplicateFieldName;
+      std::string missingOrDuplicateFieldName;
       SourceLocation declLoc;
    };
 
@@ -116,7 +80,7 @@ public:
 
 private:
    mutable IdentifierTable Idents;
-   mutable llvm::BumpPtrAllocator Allocator;
+   mutable support::BumpPtrAllocator Allocator;
 
    mutable IntType Int1Ty;
    mutable IntType Int8Ty;
@@ -134,11 +98,11 @@ private:
    mutable StringType StringTy;
    mutable CodeType CodeTy;
 
-   mutable llvm::DenseMap<Class*, ClassType>   ClassTypes;
-   mutable llvm::DenseMap<Record*, RecordType> RecordTypes;
-   mutable llvm::DenseMap<Enum*, EnumType>     EnumTypes;
-   mutable llvm::DenseMap<Type*, ListType>     ListTypes;
-   mutable llvm::DenseMap<Type*, DictType>     DictTypes;
+   mutable std::unordered_map<Class*, ClassType>   ClassTypes;
+   mutable std::unordered_map<Record*, RecordType> RecordTypes;
+   mutable std::unordered_map<Enum*, EnumType>     EnumTypes;
+   mutable std::unordered_map<Type*, ListType>     ListTypes;
+   mutable std::unordered_map<Type*, DictType>     DictTypes;
 
 public:
    IntType *getInt1Ty() const { return &Int1Ty; }
@@ -164,7 +128,7 @@ public:
             case 16: return &Int16Ty;
             case 32: return &Int32Ty;
             case 64: return &Int64Ty;
-            default: llvm_unreachable("bad bitwidth");
+            default: unreachable("bad bitwidth");
          }
       }
       else {
@@ -174,7 +138,7 @@ public:
             case 16: return &UInt16Ty;
             case 32: return &UInt32Ty;
             case 64: return &UInt64Ty;
-            default: llvm_unreachable("bad bitwidth");
+            default: unreachable("bad bitwidth");
          }
       }
    }
@@ -189,47 +153,47 @@ public:
    {
       auto it = ClassTypes.find(C);
       if (it != ClassTypes.end())
-         return &it->getSecond();
+         return &it->second;
 
-      return &ClassTypes.try_emplace(C, ClassType(C)).first->getSecond();
+      return &ClassTypes.try_emplace(C, ClassType(C)).first->second;
    }
 
    RecordType *getRecordType(Record *R) const
    {
       auto it = RecordTypes.find(R);
       if (it != RecordTypes.end())
-         return &it->getSecond();
+         return &it->second;
 
-      return &RecordTypes.try_emplace(R, RecordType(R)).first->getSecond();
+      return &RecordTypes.try_emplace(R, RecordType(R)).first->second;
    }
 
    EnumType *getEnumType(Enum *E) const
    {
       auto it = EnumTypes.find(E);
       if (it != EnumTypes.end())
-         return &it->getSecond();
+         return &it->second;
 
-      return &EnumTypes.try_emplace(E, EnumType(E)).first->getSecond();
+      return &EnumTypes.try_emplace(E, EnumType(E)).first->second;
    }
 
    ListType *getListType(Type *ElementTy) const
    {
       auto it = ListTypes.find(ElementTy);
       if (it != ListTypes.end())
-         return &it->getSecond();
+         return &it->second;
 
       return &ListTypes.try_emplace(ElementTy,
-                                    ListType(ElementTy)).first->getSecond();
+                                    ListType(ElementTy)).first->second;
    }
 
    DictType *getDictType(Type *ElementTy)
    {
       auto it = DictTypes.find(ElementTy);
       if (it != DictTypes.end())
-         return &it->getSecond();
+         return &it->second;
 
       return &DictTypes.try_emplace(ElementTy,
-                                    DictType(ElementTy)).first->getSecond();
+                                    DictType(ElementTy)).first->second;
    }
 };
 

@@ -94,7 +94,7 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Value const* V)
       str << DA->getDict() << "[\"" << DA->getKey() << "\"]";
    }
    else {
-      llvm_unreachable("unhandled value kind");
+      unreachable("unhandled value kind");
    }
 
    return str;

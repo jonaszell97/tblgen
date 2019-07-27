@@ -1,45 +1,20 @@
-//
-// Created by Jonas Zell on 23.05.18.
-//
 
 #ifndef TBLGEN_STRINGSWITCH_H
 #define TBLGEN_STRINGSWITCH_H
-
-#include <llvm/ADT/StringRef.h>
-#include <llvm/Support/Compiler.h>
 
 #include <cassert>
 #include <cstring>
 
 namespace tblgen {
 
-/// A switch()-like statement whose cases are string literals.
-///
-/// The StringSwitch class is a simple form of a switch() statement that
-/// determines whether the given string matches one of the given string
-/// literals. The template type parameter \p T is the type of the value that
-/// will be returned from the string-switch expression. For example,
-/// the following code switches on the name of a color in \c argv[i]:
-///
-/// \code
-/// Color color = StringSwitch<Color>(argv[i])
-///   .Case("red", Red)
-///   .Case("orange", Orange)
-///   .Case("yellow", Yellow)
-///   .Case("green", Green)
-///   .Case("blue", Blue)
-///   .Case("indigo", Indigo)
-///   .Cases("violet", "purple", Violet)
-///   .Default(UnknownColor);
-/// \endcode
 template<typename T, typename R = T>
 class StringSwitch {
   /// The string we are matching.
-  const llvm::StringRef Str;
+  std::string Str;
 
   /// The pointer to the result of this switch statement, once known,
   /// null before that.
-  llvm::Optional<T> Result;
+  Optional<T> Result;
 
 public:
   LLVM_ATTRIBUTE_ALWAYS_INLINE

@@ -977,7 +977,7 @@ void Parser::parseForEach(Class *C, Record *R)
       }
    }
    else {
-      llvm_unreachable("hmmm...");
+      unreachable("hmmm...");
    }
 
    unsigned Open = 1;
@@ -1754,7 +1754,7 @@ Value* Parser::parseFunction(Type *contextualTy)
    }
    }
 
-   llvm_unreachable("unhandled function kind");
+   unreachable("unhandled function kind");
 }
 
 #undef EXPECT_NUM_ARGS

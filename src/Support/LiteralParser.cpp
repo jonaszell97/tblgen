@@ -57,7 +57,7 @@ static uint8_t getDigitValue(char c, uint8_t radix)
          return (uint8_t)(::toupper(c) - 'A') + uint8_t(10);
       }
    default:
-      llvm_unreachable("bad radix!");
+      unreachable("bad radix!");
    }
 }
 
@@ -89,7 +89,7 @@ LiteralParser::IntResult LiteralParser::parseInteger(unsigned int bitwidth,
       shift = 4;
       break;
    default:
-      llvm_unreachable("bad radix!");
+      unreachable("bad radix!");
    }
 
    const char *Ptr = Str.begin();
@@ -131,7 +131,7 @@ LiteralParser::CharResult LiteralParser::parseCharacter()
       Val += getDigitValue(Str[3], 16);
    }
    else if (Str[1] == 'u') {
-      llvm_unreachable("TODO!");
+      unreachable("TODO!");
    }
    else {
       assert(Str.size() == 2 && "malformed hex character literal!");

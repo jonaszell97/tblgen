@@ -38,7 +38,7 @@ static llvm::StringRef getMessage(MessageKind msg)
 #  include "tblgen/Message/def/Diagnostics.def"
    }
 
-   llvm_unreachable("bad msg kind");
+   unreachable("bad msg kind");
 }
 
 DiagnosticBuilder::DiagnosticBuilder(DiagnosticsEngine &Engine)
@@ -153,7 +153,7 @@ void DiagnosticBuilder::appendArgumentString(unsigned idx, std::string &str)
       str += std::to_string(Engine.OtherArgs[idx]);
       break;
    default:
-      llvm_unreachable("unhandled argument kind");
+      unreachable("unhandled argument kind");
    }
 }
 
@@ -166,7 +166,7 @@ void DiagnosticBuilder::handleFunction(unsigned idx, lex::Lexer& lex,
             funcName = "if";
             break;
          default:
-            llvm_unreachable("unexpected keyword in diagnostic");
+            unreachable("unexpected keyword in diagnostic");
       }
    }
    else {
@@ -197,7 +197,7 @@ void DiagnosticBuilder::handleFunction(unsigned idx, lex::Lexer& lex,
          val = (unsigned)!Engine.StringArgs[idx].empty();
       }
       else {
-         llvm_unreachable("bad arg kind");
+         unreachable("bad arg kind");
       }
 
       assert(args.size() > val && "too few options for index");
@@ -260,7 +260,7 @@ void DiagnosticBuilder::handleFunction(unsigned idx, lex::Lexer& lex,
          }
       }
       else {
-         llvm_unreachable("bad arg kind");
+         unreachable("bad arg kind");
       }
    }
 }

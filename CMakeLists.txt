@@ -4,21 +4,8 @@ project(TableGen)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# find LLVM
-find_package(LLVM REQUIRED CONFIG)
-
-# llvm libraries
-llvm_map_components_to_libnames(llvm_libs Support)
-
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Found LLVM libs ${llvm_libs}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
-include_directories(${LLVM_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
-
 # set CXX flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic -fno-exceptions -fno-rtti")
 
 # add include directories
 include_directories("include")
@@ -40,8 +27,8 @@ set(SOURCE_FILES include/tblgen/Parser.h
         include/tblgen/Support/Format.h src/Support/Format.cpp include/tblgen/Basic/DependencyGraph.h
         src/Support/LiteralParser.cpp include/tblgen/Support/LiteralParser.h
         src/Message/DiagnosticsEngine.cpp include/tblgen/Message/DiagnosticsEngine.h
-        include/tblgen/Support/StringSwitch.h)
+        include/tblgen/Support/StringSwitch.h src/Support/DynamicLibrary.cpp include/tblgen/Support/DynamicLibrary.h
+        include/tblgen/Support/Allocator.h)
 
 add_executable(tblgen main.cpp ${SOURCE_FILES})
-target_link_libraries(tblgen ${llvm_libs})
 

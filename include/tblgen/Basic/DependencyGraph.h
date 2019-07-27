@@ -151,7 +151,7 @@ public:
             return { vert->getPtr(),
                (*vert->getOutgoing().begin())->getPtr() };
 
-      llvm_unreachable("order is valid!");
+      unreachable("order is valid!");
    }
 
    const llvm::SmallVector<Vertex*, 8> &getVertices() const
