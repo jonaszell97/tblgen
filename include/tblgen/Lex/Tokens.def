@@ -1,0 +1,257 @@
+
+#ifdef TBLGEN_TOKEN
+#  define TBLGEN_OTHER_TOKEN(Name, Spelling)      TBLGEN_TOKEN(Name, Spelling)
+#  define TBLGEN_KEYWORD_TOKEN(Name, Spelling)    TBLGEN_TOKEN(Name, Spelling)
+#  define TBLGEN_PUNCTUATOR_TOKEN(Name, Spelling) TBLGEN_TOKEN(Name, Spelling)
+#  define TBLGEN_OPERATOR_TOKEN(Name, Spelling)   TBLGEN_TOKEN(Name, Spelling)
+#  define TBLGEN_POUND_KEYWORD_TOKEN(Name, Spelling)   TBLGEN_TOKEN(Name, Spelling)
+#  define TBLGEN_LITERAL_TOKEN(Name, Spelling)   TBLGEN_TOKEN(Name, Spelling)
+#  define TBLGEN_CONTEXTUAL_KW_TOKEN(Name, Spelling)   TBLGEN_TOKEN(Name, Spelling)
+#  define TBLGEN_MODULE_KW_TOKEN(Name, Spelling)     TBLGEN_TOKEN(Name, Spelling)
+#endif
+
+#ifdef TBLGEN_OTHER_TOKEN
+   TBLGEN_OTHER_TOKEN(sentinel, "")
+   TBLGEN_OTHER_TOKEN(eof, "")
+
+   TBLGEN_OTHER_TOKEN(expr_begin, "")
+   TBLGEN_OTHER_TOKEN(stringify_begin, "")
+   TBLGEN_OTHER_TOKEN(preprocessor_value, "")
+
+   TBLGEN_OTHER_TOKEN(interpolation_begin, "")
+   TBLGEN_OTHER_TOKEN(interpolation_end, "")
+   
+   TBLGEN_OTHER_TOKEN(macro_expression, "")
+   TBLGEN_OTHER_TOKEN(macro_statement, "")
+   TBLGEN_OTHER_TOKEN(macro_declaration, "")
+
+   TBLGEN_OTHER_TOKEN(ident, "")
+   TBLGEN_OTHER_TOKEN(op_ident, "")
+   TBLGEN_OTHER_TOKEN(dollar_ident, "")
+   TBLGEN_OTHER_TOKEN(closure_arg, "")
+   TBLGEN_OTHER_TOKEN(macro_name, "")
+   TBLGEN_OTHER_TOKEN(percent_ident, "")
+   TBLGEN_OTHER_TOKEN(dollar_dollar_ident, "")
+   TBLGEN_OTHER_TOKEN(percent_percent_ident, "")
+#endif
+
+#ifdef TBLGEN_LITERAL_TOKEN
+   TBLGEN_LITERAL_TOKEN(charliteral, "")
+   TBLGEN_LITERAL_TOKEN(stringliteral, "")
+   TBLGEN_LITERAL_TOKEN(integerliteral, "")
+   TBLGEN_LITERAL_TOKEN(fpliteral, "")
+#endif
+
+#ifdef TBLGEN_KEYWORD_TOKEN
+#  define TBLGEN_KEYWORD(Name) TBLGEN_KEYWORD_TOKEN(kw_##Name, #Name)
+
+   // semantically these are keywords as they can't appear in arbitrary
+   // expression context, even though they are lexed as operators
+   TBLGEN_KEYWORD_TOKEN(arrow_single, "->")
+   TBLGEN_KEYWORD_TOKEN(arrow_double, "=>")
+#endif
+
+#ifdef TBLGEN_KEYWORD
+   TBLGEN_KEYWORD(self)
+   TBLGEN_KEYWORD(super)
+   TBLGEN_KEYWORD(true)
+   TBLGEN_KEYWORD(false)
+   TBLGEN_KEYWORD(none)
+   
+   TBLGEN_KEYWORD(def)
+   TBLGEN_KEYWORD(let)
+   TBLGEN_KEYWORD(var)
+   TBLGEN_KEYWORD(return)
+   TBLGEN_KEYWORD(if)
+   TBLGEN_KEYWORD(else)
+   TBLGEN_KEYWORD(while)
+   TBLGEN_KEYWORD(loop)
+   TBLGEN_KEYWORD(match)
+   TBLGEN_KEYWORD(for)
+   TBLGEN_KEYWORD(case)
+  
+   TBLGEN_KEYWORD(throw)
+   TBLGEN_KEYWORD(try)
+   TBLGEN_KEYWORD(await)
+   TBLGEN_KEYWORD(catch)
+   TBLGEN_KEYWORD(finally)
+
+   TBLGEN_KEYWORD(alias)
+
+   TBLGEN_KEYWORD(typedef)
+   TBLGEN_KEYWORD(namespace)
+   TBLGEN_KEYWORD(struct)
+   TBLGEN_KEYWORD(class)
+   TBLGEN_KEYWORD(union)
+   TBLGEN_KEYWORD(enum)
+   TBLGEN_KEYWORD(protocol)
+   TBLGEN_KEYWORD(extend)
+   TBLGEN_KEYWORD(mixin)
+   
+   TBLGEN_KEYWORD(public)
+   TBLGEN_KEYWORD(private)
+   TBLGEN_KEYWORD(protected)
+   TBLGEN_KEYWORD(fileprivate)
+   TBLGEN_KEYWORD(internal)
+   TBLGEN_KEYWORD(static)
+   TBLGEN_KEYWORD(abstract)
+   TBLGEN_KEYWORD(prop)
+   TBLGEN_KEYWORD(continue)
+   TBLGEN_KEYWORD(init)
+   TBLGEN_KEYWORD(associatedType)
+
+   TBLGEN_KEYWORD(break)
+   TBLGEN_KEYWORD(mutating)
+   TBLGEN_KEYWORD(declare)
+
+   TBLGEN_KEYWORD(module)
+   TBLGEN_KEYWORD(import)
+
+   TBLGEN_KEYWORD(static_if)
+   TBLGEN_KEYWORD(static_for)
+   TBLGEN_KEYWORD(static_assert)
+   TBLGEN_KEYWORD(static_print)
+
+   TBLGEN_KEYWORD(__debug)
+   TBLGEN_KEYWORD(__unreachable)
+#endif
+
+#ifdef TBLGEN_SOFT_KEYWORD
+   TBLGEN_SOFT_KEYWORD(using)
+   TBLGEN_SOFT_KEYWORD(read)
+   TBLGEN_SOFT_KEYWORD(write)
+   TBLGEN_SOFT_KEYWORD(nonmutating)
+#endif
+
+#ifdef TBLGEN_MODULE_KW_TOKEN
+   TBLGEN_MODULE_KW_TOKEN(kw_source_files, "source_files")
+   TBLGEN_MODULE_KW_TOKEN(kw_timestamp, "timestamp")
+   TBLGEN_MODULE_KW_TOKEN(kw_build_options, "build_options")
+#endif
+
+#ifdef TBLGEN_TABLEGEN_KW_TOKEN
+   TBLGEN_TABLEGEN_KW_TOKEN(tblgen_if, "if")
+   TBLGEN_TABLEGEN_KW_TOKEN(tblgen_foreach, "foreach")
+   TBLGEN_TABLEGEN_KW_TOKEN(tblgen_print, "print")
+#endif
+
+#ifdef TBLGEN_CONTEXTUAL_KW_TOKEN
+   TBLGEN_CONTEXTUAL_KW_TOKEN(kw_typename, "typename")
+   TBLGEN_CONTEXTUAL_KW_TOKEN(kw_value, "value")
+   TBLGEN_CONTEXTUAL_KW_TOKEN(kw_in, "in")
+#endif
+
+#ifdef TBLGEN_POUND_KEYWORD_TOKEN
+#  define TBLGEN_POUND_KEYWORD(Name) TBLGEN_POUND_KEYWORD_TOKEN(pound_##Name, "#" #Name)
+#endif
+
+#ifdef TBLGEN_POUND_KEYWORD
+   TBLGEN_POUND_KEYWORD(if)
+   TBLGEN_POUND_KEYWORD(else)
+   TBLGEN_POUND_KEYWORD(elseif)
+   TBLGEN_POUND_KEYWORD(endif)
+   TBLGEN_POUND_KEYWORD(ifdef)
+   TBLGEN_POUND_KEYWORD(ifndef)
+   TBLGEN_POUND_KEYWORD(for)
+   TBLGEN_POUND_KEYWORD(endfor)
+   TBLGEN_POUND_KEYWORD(pragma)
+   TBLGEN_POUND_KEYWORD(define)
+   TBLGEN_POUND_KEYWORD(macro)
+   TBLGEN_POUND_KEYWORD(undef)
+   TBLGEN_POUND_KEYWORD(let)
+   TBLGEN_POUND_KEYWORD(print)
+   TBLGEN_POUND_KEYWORD(include)
+   TBLGEN_POUND_KEYWORD(using)
+   TBLGEN_POUND_KEYWORD(namespace)
+   TBLGEN_POUND_KEYWORD(endnamespace)
+#endif
+
+#ifdef TBLGEN_PUNCTUATOR_TOKEN
+   TBLGEN_PUNCTUATOR_TOKEN(space, ' ')
+   TBLGEN_PUNCTUATOR_TOKEN(open_paren, '(')
+   TBLGEN_PUNCTUATOR_TOKEN(close_paren, ')')
+   TBLGEN_PUNCTUATOR_TOKEN(comma, ',')
+   TBLGEN_PUNCTUATOR_TOKEN(open_brace, '{')
+   TBLGEN_PUNCTUATOR_TOKEN(close_brace, '}')
+   TBLGEN_PUNCTUATOR_TOKEN(open_square, '[')
+   TBLGEN_PUNCTUATOR_TOKEN(close_square, ']')
+   TBLGEN_PUNCTUATOR_TOKEN(semicolon, ';')
+   TBLGEN_PUNCTUATOR_TOKEN(newline, '\n')
+   TBLGEN_PUNCTUATOR_TOKEN(backslash, '\\')
+   TBLGEN_PUNCTUATOR_TOKEN(period, '.')
+   TBLGEN_PUNCTUATOR_TOKEN(at, '@')
+   TBLGEN_PUNCTUATOR_TOKEN(pound, '#')
+   TBLGEN_PUNCTUATOR_TOKEN(single_quote, '\'')
+   TBLGEN_PUNCTUATOR_TOKEN(double_quote, '"')
+   TBLGEN_PUNCTUATOR_TOKEN(backtick, '`')
+   TBLGEN_PUNCTUATOR_TOKEN(dollar, '$')
+   TBLGEN_PUNCTUATOR_TOKEN(underscore, '_')
+#endif
+
+#ifdef TBLGEN_OPERATOR_TOKEN
+   TBLGEN_OPERATOR_TOKEN(exclaim, "!")
+   TBLGEN_OPERATOR_TOKEN(question, "?")
+   TBLGEN_OPERATOR_TOKEN(colon, ":")
+
+   TBLGEN_OPERATOR_TOKEN(equals, "=")
+   TBLGEN_OPERATOR_TOKEN(plus_equals, "+=")
+   TBLGEN_OPERATOR_TOKEN(minus_equals, "-=")
+   TBLGEN_OPERATOR_TOKEN(times_equals, "*=")
+   TBLGEN_OPERATOR_TOKEN(div_equals, "/=")
+   TBLGEN_OPERATOR_TOKEN(mod_equals, "%=")
+   TBLGEN_OPERATOR_TOKEN(and_equals, "&=")
+   TBLGEN_OPERATOR_TOKEN(or_equals, "|=")
+   TBLGEN_OPERATOR_TOKEN(xor_equals, "^=")
+   TBLGEN_OPERATOR_TOKEN(exp_equals, "**=")
+   TBLGEN_OPERATOR_TOKEN(shl_equals, "<<=")
+   TBLGEN_OPERATOR_TOKEN(ashr_equals, ">>=")
+   TBLGEN_OPERATOR_TOKEN(lshr_equals, ">>>=")
+
+   TBLGEN_OPERATOR_TOKEN(logical_or, "||")
+   TBLGEN_OPERATOR_TOKEN(logical_and, "&&")
+   TBLGEN_OPERATOR_TOKEN(op_and, "&")
+   TBLGEN_OPERATOR_TOKEN(op_or, "|")
+   TBLGEN_OPERATOR_TOKEN(caret, "^")
+   TBLGEN_OPERATOR_TOKEN(tilde, "~")
+   TBLGEN_OPERATOR_TOKEN(exclaim_equals, "!=")
+   TBLGEN_OPERATOR_TOKEN(double_equals, "==")
+
+   TBLGEN_OPERATOR_TOKEN(triple_equals, "===")
+   TBLGEN_OPERATOR_TOKEN(exclaim_double_equals, "!==")
+
+   TBLGEN_OPERATOR_TOKEN(smaller_equals, "<=")
+   TBLGEN_OPERATOR_TOKEN(greater_equals, ">=")
+   TBLGEN_OPERATOR_TOKEN(smaller, "<")
+   TBLGEN_OPERATOR_TOKEN(greater, ">")
+   TBLGEN_OPERATOR_TOKEN(shl, "<<")
+   TBLGEN_OPERATOR_TOKEN(lshr, ">>>")
+   TBLGEN_OPERATOR_TOKEN(ashr, ">>")
+   TBLGEN_OPERATOR_TOKEN(plus, "+")
+   TBLGEN_OPERATOR_TOKEN(minus, "-")
+   TBLGEN_OPERATOR_TOKEN(times, "*")
+
+   TBLGEN_OPERATOR_TOKEN(plus_plus, "++")
+   TBLGEN_OPERATOR_TOKEN(minus_minus, "--")
+
+   TBLGEN_OPERATOR_TOKEN(div, "/")
+   TBLGEN_OPERATOR_TOKEN(percent, "%")
+   TBLGEN_OPERATOR_TOKEN(times_times, "**")
+   TBLGEN_OPERATOR_TOKEN(triple_period, "...")
+   
+   TBLGEN_OPERATOR_TOKEN(exclaim_is, "!is")
+#endif
+
+#undef TBLGEN_TOKEN
+#undef TBLGEN_OTHER_TOKEN
+#undef TBLGEN_OPERATOR_TOKEN
+#undef TBLGEN_PUNCTUATOR_TOKEN
+#undef TBLGEN_KEYWORD_TOKEN
+#undef TBLGEN_SOFT_KEYWORD
+#undef TBLGEN_POUND_KEYWORD_TOKEN
+#undef TBLGEN_LITERAL_TOKEN
+#undef TBLGEN_CONTEXTUAL_KW_TOKEN
+#undef TBLGEN_MODULE_KW_TOKEN
+#undef TBLGEN_TABLEGEN_KW_TOKEN
+
+#undef TBLGEN_KEYWORD
+#undef TBLGEN_POUND_KEYWORD
