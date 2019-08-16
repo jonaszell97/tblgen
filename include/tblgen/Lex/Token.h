@@ -89,9 +89,9 @@ struct Token {
 
    void Profile(llvm::FoldingSetNodeID &ID) const;
 
-   bool isIdentifier(llvm::StringRef str) const;
-   bool isIdentifierStartingWith(llvm::StringRef str) const;
-   bool isIdentifierEndingWith(llvm::StringRef str) const;
+   bool isIdentifier(std::string_view str) const;
+   bool isIdentifierStartingWith(std::string_view str) const;
+   bool isIdentifierEndingWith(std::string_view str) const;
 
    std::string toString() const;
    std::string rawRepr() const;
@@ -161,15 +161,15 @@ struct Token {
       return (IdentifierInfo*)(Ptr);
    }
 
-   llvm::StringRef getIdentifier() const;
+   std::string_view getIdentifier() const;
 
-   llvm::StringRef getText() const
+   std::string_view getText() const
    {
       assert(oneOf(tok::charliteral, tok::stringliteral, tok::fpliteral,
                    tok::integerliteral, tok::space, tok::closure_arg,
                    tok::macro_name)
              && "not a literal token");
-      return llvm::StringRef((const char*)Ptr, Data);
+      return std::string_view((const char*)Ptr, Data);
    }
 
    llvm::APInt getIntegerValue() const;

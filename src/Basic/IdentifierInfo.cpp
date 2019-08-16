@@ -42,7 +42,7 @@ void IdentifierTable::addTblGenKeywords()
 }
 
 void IdentifierTable::addKeyword(tblgen::lex::tok::TokenType kind,
-                                 llvm::StringRef kw) {
+                                 std::string_view kw) {
    (void)get(kw, kind);
 }
 

@@ -117,7 +117,7 @@ class TblGenDiagConsumer : public DiagnosticConsumer {
 public:
    void HandleDiagnostic(const Diagnostic &Diag) override
    {
-      llvm::errs() << Diag.getMsg();
+      std::cerr << Diag.getMsg();
    }
 };
 

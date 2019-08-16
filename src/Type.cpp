@@ -28,7 +28,7 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Type const* Ty)
    switch (Ty->getTypeID()) {
       case Type::IntTypeID: {
          auto I = cast<IntType>(Ty);
-         str << llvm::StringRef(I->isUnsigned() ? "u" : "i")
+         str << std::string_view(I->isUnsigned() ? "u" : "i")
              << I->getBitWidth();
          break;
       }

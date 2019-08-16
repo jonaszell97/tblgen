@@ -1,16 +1,13 @@
-//
-// Created by Jonas Zell on 04.02.18.
-//
 
 #include "tblgen/Backend/TableGenBackends.h"
 #include "tblgen/Record.h"
 #include "tblgen/Value.h"
 
-#include <llvm/Support/raw_ostream.h>
+#include <iostream>
 
 namespace tblgen {
 
-static void printBases(llvm::raw_ostream &out, Class &C, size_t &i)
+static void printBases(std::ostream &out, Class &C, size_t &i)
 {
    for (auto &B : C.getBases()) {
       if (i++ != 0) out << ", ";
@@ -19,7 +16,7 @@ static void printBases(llvm::raw_ostream &out, Class &C, size_t &i)
    }
 }
 
-static void printBases(llvm::raw_ostream &out, Record &R, size_t &i)
+static void printBases(std::ostream &out, Record &R, size_t &i)
 {
    for (auto &B : R.getBases()) {
       if (i++ != 0) out << ", ";
@@ -28,7 +25,7 @@ static void printBases(llvm::raw_ostream &out, Record &R, size_t &i)
    }
 }
 
-static void printRecord(llvm::raw_ostream &out, Record &R)
+static void printRecord(std::ostream &out, Record &R)
 {
    out << "def " << R.getName() << " {";
    if (!R.getBases().empty()) {
@@ -46,7 +43,7 @@ static void printRecord(llvm::raw_ostream &out, Record &R)
    out << "}";
 }
 
-void PrintRecords(llvm::raw_ostream &str, RecordKeeper const& RK)
+void PrintRecords(std::ostream &str, RecordKeeper const& RK)
 {
    size_t i = 0;
    for (auto &R : RK.getAllRecords()) {

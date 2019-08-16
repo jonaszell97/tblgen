@@ -37,7 +37,7 @@ Lexer::Lexer(IdentifierTable &Idents,
 
 Lexer::Lexer(IdentifierTable &Idents,
              DiagnosticsEngine &Diags,
-             llvm::ArrayRef<Token> Tokens,
+             const std::vector<Token> &Tokens,
              unsigned sourceId,
              unsigned int offset)
    : Idents(Idents), Diags(Diags),
@@ -52,7 +52,7 @@ Lexer::Lexer(IdentifierTable &Idents,
    LookaheadIdx = 1;
 }
 
-void Lexer::reset(llvm::ArrayRef<Token> Tokens)
+void Lexer::reset(const std::vector<Token> &Tokens)
 {
    assert(IsTokenLexer && "can't reset non-token lexer");
 
@@ -72,7 +72,7 @@ Token Lexer::makeEOF()
    return Token(tok::eof, SourceLocation(Offset));
 }
 
-llvm::StringRef Lexer::getCurrentIdentifier() const
+std::string_view Lexer::getCurrentIdentifier() const
 {
    return currentTok().getIdentifierInfo()->getIdentifier();
 }
@@ -121,7 +121,7 @@ void Lexer::printTokensTo(llvm::raw_ostream &out)
 
 void Lexer::dump()
 {
-   printTokensTo(llvm::outs());
+   printTokensTo(std::cout);
 }
 
 char Lexer::escape_char(char c)
@@ -239,7 +239,7 @@ Token Lexer::lexNextToken()
 //         while (*CurPtr >= 'a' && *CurPtr <= 'z')
 //            ++CurPtr;
 //
-//         auto &II = Idents.get(llvm::StringRef(TokBegin,
+//         auto &II = Idents.get(std::string_view(TokBegin,
 //                                               CurPtr - TokBegin));
 //
 //         if (II.getKeywordTokenKind() == tok::sentinel) {
@@ -315,7 +315,7 @@ Token Lexer::lexNextToken()
    case '%': {
       lexOperator();
 
-      auto op = llvm::StringRef(TokBegin, CurPtr - TokBegin);
+      auto op = std::string_view(TokBegin, CurPtr - TokBegin);
       kind = getBuiltinOperator(op);
 
       if (kind == tok::sentinel) {
@@ -384,7 +384,7 @@ Token Lexer::lexNextToken()
    return makeToken(kind);
 }
 
-tok::TokenType Lexer::getBuiltinOperator(llvm::StringRef str)
+tok::TokenType Lexer::getBuiltinOperator(std::string_view str)
 {
    assert(!str.empty());
    

@@ -1,18 +1,11 @@
-//
-// Created by Jonas Zell on 14.10.17.
-//
 
 #ifndef TBLGEN_FILEMANAGER_H
 #define TBLGEN_FILEMANAGER_H
 
 #include "tblgen/Lex/SourceLocation.h"
 
-#include <llvm/ADT/DenseMap.h>
-#include <llvm/ADT/StringMap.h>
-#include <llvm/ADT/Twine.h>
-#include <llvm/Support/MemoryBuffer.h>
-#include <llvm/Support/raw_ostream.h>
-
+#include <fstream>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -30,32 +23,33 @@ using SourceOffset = unsigned;
 extern SourceID InvalidID;
 
 struct OpenFile {
-   OpenFile(llvm::StringRef FileName = "",
+   OpenFile(std::string_view FileName = "",
             SourceID SourceId = 0,
             unsigned int BaseOffset = 0,
-            llvm::MemoryBuffer *Buf = nullptr)
-      : FileName(FileName), SourceId(SourceId), BaseOffset(BaseOffset), Buf(Buf)
+            const char *Buf = nullptr)
+      : FileName(FileName), SourceId(SourceId), BaseOffset(BaseOffset),
+        Buf(Buf)
    { }
 
-   llvm::StringRef FileName;
+   std::string_view FileName;
    SourceID SourceId;
    SourceOffset BaseOffset;
-   llvm::MemoryBuffer *Buf;
+   const char *Buf;
 };
 
 class FileManager {
 public:
    FileManager();
 
-   OpenFile openFile(const llvm::Twine &fileName, bool CreateSourceID = true);
-   OpenFile getBufferForString(llvm::StringRef Str);
+   OpenFile openFile(std::string_view fileName, bool CreateSourceID = true);
+   OpenFile getBufferForString(std::string_view Str);
 
    OpenFile getOpenedFile(SourceID sourceId);
    OpenFile getOpenedFile(SourceLocation loc)
    { return getOpenedFile(getSourceId(loc)); }
 
-   llvm::MemoryBuffer *getBuffer(SourceID sourceId);
-   llvm::MemoryBuffer *getBuffer(SourceLocation loc)
+   std::ifstream *getBuffer(SourceID sourceId);
+   std::ifstream *getBuffer(SourceLocation loc)
    { return getBuffer(getSourceId(loc)); }
 
    SourceOffset getBaseOffset(SourceID sourceId)
@@ -71,22 +65,22 @@ public:
    SourceID getSourceId(SourceLocation loc);
    SourceID getLexicalSourceId(SourceLocation loc);
 
-   llvm::StringRef getFileName(SourceLocation loc)
+   std::string_view getFileName(SourceLocation loc)
    {
       return getFileName(getSourceId(loc));
    }
 
-   llvm::StringRef getFileName(SourceID sourceId);
+   std::string_view getFileName(SourceID sourceId);
 
    LineColPair getLineAndCol(SourceLocation loc);
-   LineColPair getLineAndCol(SourceLocation loc, llvm::MemoryBuffer *Buf);
-   llvm::ArrayRef<SourceOffset> getLineOffsets(SourceID sourceID);
+   LineColPair getLineAndCol(SourceLocation loc, std::ifstream *Buf);
+   const std::vector<SourceOffset> &getLineOffsets(SourceID sourceID);
 
    struct CachedFile {
       CachedFile(std::string &&FN,
                  SourceID SourceId,
                  SourceOffset BaseOffset,
-                 std::unique_ptr<llvm::MemoryBuffer> &&Buf)
+                 std::string &&Buf)
          : FileName(move(FN)), SourceId(SourceId), BaseOffset(BaseOffset),
            Buf(move(Buf)), IsMacroExpansion(false), IsMixin(false)
       { }
@@ -94,15 +88,15 @@ public:
       std::string FileName;
       SourceID SourceId;
       SourceOffset BaseOffset;
-      std::unique_ptr<llvm::MemoryBuffer> Buf;
+      std::string Buf;
 
       bool IsMacroExpansion : 1;
       bool IsMixin          : 1;
 
-      llvm::StringMapEntry<CachedFile> *IncludedFrom = nullptr;
+      std::unordered_map<std::string, CachedFile>::iterator IncludedFrom;
    };
 
-   const llvm::StringMap<CachedFile> &getSourceFiles() const
+   const std::unordered_map<std::string, CachedFile> &getSourceFiles() const
    { return MemBufferCache; }
 
    void dumpSourceLine(SourceLocation Loc);
@@ -110,19 +104,19 @@ public:
 
 private:
    std::vector<SourceOffset> sourceIdOffsets;
-   llvm::StringMap<CachedFile> MemBufferCache;
-   llvm::DenseMap<SourceID, llvm::StringMapEntry<CachedFile>*> IdFileMap;
+   std::unordered_map<std::string, CachedFile> MemBufferCache;
+   std::unordered_map<SourceID, std::unordered_map<std::string, CachedFile>::iterator> IdFileMap;
 
    std::unordered_map<SourceID, SourceLocation> aliases;
    std::unordered_map<SourceID, std::vector<SourceOffset>> LineOffsets;
 
    const std::vector<SourceOffset> &collectLineOffsetsForFile(SourceID sourceId,
-                                                       llvm::MemoryBuffer *Buf);
+                                                       std::ifstream *Buf);
 
-   llvm::DenseMap<SourceID, SourceLocation> Imports;
+   std::unordered_map<SourceID, SourceLocation> Imports;
 };
 
-using SourceFileRef = llvm::StringMapEntry<FileManager::CachedFile>*;
+using SourceFileRef = std::unordered_map<std::string, FileManager::CachedFile>::iterator;
 
 } // namespace fs
 } // namespace tblgen

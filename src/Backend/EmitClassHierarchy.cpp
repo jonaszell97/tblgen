@@ -1,28 +1,22 @@
-//
-// Created by Jonas Zell on 04.02.18.
-//
 
 #include "tblgen/Backend/TableGenBackends.h"
-#include "tblgen/Record.h"
-#include "tblgen/Value.h"
-#include "tblgen/Message/Diagnostics.h"
-#include "tblgen/Support/Casting.h"
 #include "tblgen/Basic/DependencyGraph.h"
+#include "tblgen/Message/Diagnostics.h"
+#include "tblgen/Record.h"
+#include "tblgen/Support/Casting.h"
+#include "tblgen/Value.h"
 
-#include <llvm/ADT/SmallString.h>
-#include <llvm/ADT/Twine.h>
-#include <llvm/ADT/SmallPtrSet.h>
+#include <iostream>
 
 using namespace tblgen::diag;
 using namespace tblgen::support;
 
 namespace tblgen {
 
-static void buildMacroName(Record *R,
-                           llvm::SmallString<128> &macro,
-                           llvm::StringRef prefix,
-                           llvm::StringRef suffix,
-                           unsigned nameCutoff) {
+static void buildMacroName(Record *R, std::string &macro,
+                           std::string_view prefix, std::string_view suffix,
+                           unsigned nameCutoff)
+{
    macro.clear();
 
    unsigned offset = 1;
@@ -69,57 +63,53 @@ static bool isAbstract(Record *R)
    return cast<IntegerLiteral>(F)->getVal().getBoolValue();
 }
 
-void EmitClassHierarchy(llvm::raw_ostream &out, RecordKeeper const& RK)
+void EmitClassHierarchy(std::ostream &out, RecordKeeper const &RK)
 {
-   Class *BaseClass    = nullptr;
+   Class *BaseClass = nullptr;
    Class *DerivedClass = nullptr;
 
    auto options = RK.lookupRecord("HierarchyOptions");
    if (!options) {
-      llvm::errs()
-         << "no HierarchyOptions def provided\n";
+      std::cerr << "no HierarchyOptions def provided\n";
 
       return;
    }
 
    auto BaseVal = options->getFieldValue("BaseClass");
    if (!BaseVal || !isa<StringLiteral>(BaseVal)) {
-      llvm::errs()
-         << "HierarchyOptions must have a field 'BaseClass' of type string\n";
+      std::cerr
+          << "HierarchyOptions must have a field 'BaseClass' of type string\n";
 
       return;
    }
 
    BaseClass = RK.lookupClass(cast<StringLiteral>(BaseVal)->getVal());
-   if (!BaseClass)  {
-      llvm::errs() << "class "
-                   << cast<StringLiteral>(BaseVal)->getVal()
-                   << " not found\n";
+   if (!BaseClass) {
+      std::cerr << "class " << cast<StringLiteral>(BaseVal)->getVal()
+                << " not found\n";
 
       return;
    }
 
    auto DerivedVal = options->getFieldValue("DerivedClass");
    if (!DerivedVal || !isa<StringLiteral>(DerivedVal)) {
-      llvm::errs()
-         << "HierarchyOptions must have a field 'DerivedClass' of type "
-            "string\n";
+      std::cerr << "HierarchyOptions must have a field 'DerivedClass' of type "
+                   "string\n";
 
       return;
    }
 
    DerivedClass = RK.lookupClass(cast<StringLiteral>(DerivedVal)->getVal());
-   if (!DerivedClass)  {
-      llvm::errs()
-         << llvm::Twine("class ")
-            + cast<StringLiteral>(DerivedVal)->getVal() + " not found\n";
+   if (!DerivedClass) {
+      std::cerr << "class " << cast<StringLiteral>(DerivedVal)->getVal()
+                << " not found\n";
 
       return;
    }
 
-   llvm::StringRef macroPrefix = "";
-   llvm::StringRef macroSuffix = "DECL";
-   unsigned nameCutoff         = 0;
+   std::string_view macroPrefix = "";
+   std::string_view macroSuffix = "DECL";
+   unsigned nameCutoff = 0;
 
    if (auto prefix = options->getFieldValue("MacroPrefix")) {
       if (auto S = dyn_cast<StringLiteral>(prefix))
@@ -137,31 +127,31 @@ void EmitClassHierarchy(llvm::raw_ostream &out, RecordKeeper const& RK)
    }
 
    struct Decl {
-      Decl(Record *R, Record *Base,
-           std::vector<Decl*> &&SubDecls,
+      Decl(Record *R, Record *Base, std::vector<Decl *> &&SubDecls,
            std::string &&macroName)
-         : R(R), Base(Base), SubDecls(move(SubDecls)),
-           macroName(move(macroName))
-      { }
+          : R(R), Base(Base), SubDecls(move(SubDecls)),
+            macroName(move(macroName))
+      {
+      }
 
       Record *R;
       Record *Base;
-      std::vector<Decl*> SubDecls;
+      std::vector<Decl *> SubDecls;
       std::string macroName;
    };
 
-   std::unordered_map<Record*, Decl> DeclMap;
-   llvm::SmallString<128> macro;
+   std::unordered_map<Record *, Decl> DeclMap;
+   std::string macro;
 
    buildMacroName(nullptr, macro, macroPrefix, macroSuffix, nameCutoff);
 
    DeclMap.emplace(nullptr,
-                   Decl(nullptr, nullptr, std::vector<Decl*>(), macro.str()));
+                   Decl(nullptr, nullptr, std::vector<Decl *>(), std::string(macro)));
 
-   llvm::SmallVector<Record*, 8> DeclVec;
+   std::vector<Record *> DeclVec;
    RK.getAllDefinitionsOf(BaseClass, DeclVec);
 
-   DependencyGraph<Record*> DG;
+   DependencyGraph<Record *> DG;
    for (auto &D : DeclVec) {
       auto &node = DG.getOrAddVertex(D);
       auto Base = D->getFieldValue("Base");
@@ -188,7 +178,7 @@ void EmitClassHierarchy(llvm::raw_ostream &out, RecordKeeper const& RK)
 
       buildMacroName(D, macro, macroPrefix, macroSuffix, nameCutoff);
 
-      auto E = DeclMap.emplace(D, Decl(D, BaseRec, {}, macro.str()));;
+      auto E = DeclMap.emplace(D, Decl(D, BaseRec, {}, std::string(macro)));
       it->second.SubDecls.push_back(&E.first->second);
    }
 
@@ -200,7 +190,8 @@ void EmitClassHierarchy(llvm::raw_ostream &out, RecordKeeper const& RK)
       if (D.second.SubDecls.empty())
          continue;
 
-      if (i++ != 0) out << "\n\n";
+      if (i++ != 0)
+         out << "\n\n";
       out << "#ifdef " << D.second.macroName << "\n";
 
       for (auto &Sub : D.second.SubDecls) {
@@ -214,11 +205,12 @@ void EmitClassHierarchy(llvm::raw_ostream &out, RecordKeeper const& RK)
       }
 
       if (D.second.R && !isAbstract(D.second.R))
-         out << "  " << D.second.macroName << "("
-             << D.second.R->getName() << ")\n";
+         out << "  " << D.second.macroName << "(" << D.second.R->getName()
+             << ")\n";
 
       for (auto &Sub : D.second.SubDecls) {
-         if (!Sub->SubDecls.empty()) continue;
+         if (!Sub->SubDecls.empty())
+            continue;
          out << "  " << D.second.macroName << "(" << Sub->R->getName() << ")\n";
       }
 

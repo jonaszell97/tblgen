@@ -13,7 +13,7 @@ namespace tblgen {
 
 class LiteralParser {
 public:
-   LiteralParser(llvm::StringRef Str)
+   LiteralParser(std::string_view Str)
       : Str(Str)
    {
       assert(!Str.empty() && "empty literal");
@@ -48,7 +48,7 @@ public:
    StringResult parseString();
 
 private:
-   llvm::StringRef Str;
+   std::string_view Str;
 
    uint8_t getIntegerRadix();
 };

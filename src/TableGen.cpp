@@ -14,7 +14,7 @@ namespace tblgen {
 
 static Value *resolveValue(Value *V,
                            Class::BaseClass const &PreviousBase,
-                           llvm::ArrayRef<Value *> ConcreteTemplateArgs,
+                           const std::vector<Value *> &ConcreteTemplateArgs,
                            SourceLocation errorLoc = {}) {
    if (auto Id = dyn_cast<IdentifierVal>(V)) {
       size_t i = 0;
@@ -60,14 +60,14 @@ static Value *resolveValue(Value *V,
 
 static void resolveValues(Class::BaseClass const &Base,
                           Class::BaseClass const &PreviousBase,
-                          llvm::ArrayRef<Value *> ConcreteTemplateArgs,
-                          llvm::SmallVectorImpl<Value *> &DstValues) {
+                          const std::vector<Value *> &ConcreteTemplateArgs,
+                          std::vector<Value *> &DstValues) {
    for (auto &V : Base.getTemplateArgs()) {
       DstValues.push_back(resolveValue(V, PreviousBase, ConcreteTemplateArgs));
    }
 }
 
-static Value *getOverride(Record &R, llvm::StringRef FieldName)
+static Value *getOverride(Record &R, std::string_view FieldName)
 {
    for (auto &Base : R.getBases()) {
       if (auto *OV = Base.getBase()->getOverride(FieldName)) {
@@ -81,7 +81,7 @@ static Value *getOverride(Record &R, llvm::StringRef FieldName)
 static RecordField const*
 implementBaseForRecord(Class::BaseClass const& Base,
                        Record &R,
-                       llvm::ArrayRef<Value *> BaseTemplateArgs) {
+                       const std::vector<Value *> &BaseTemplateArgs) {
    for (auto &Field : Base.getBase()->getFields()) {
       if (auto val = R.getOwnField(Field.getName())) {
          R.setFieldValue(Field.getName(), val->getDefaultValue());
@@ -122,7 +122,7 @@ implementBaseForRecord(Class::BaseClass const& Base,
    }
 
    // propagate resolved template arguments to the next base
-   llvm::SmallVector<Value*, 8> NextBaseTemplateArgs;
+   std::vector<Value*> NextBaseTemplateArgs;
    for (auto &NextBase : Base.getBase()->getBases()) {
       resolveValues(NextBase, Base, BaseTemplateArgs, NextBaseTemplateArgs);
 

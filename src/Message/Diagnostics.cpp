@@ -30,7 +30,7 @@ using std::string;
 namespace tblgen {
 namespace diag {
 
-static llvm::StringRef getMessage(MessageKind msg)
+static std::string_view getMessage(MessageKind msg)
 {
    switch (msg) {
 #  define TBLGEN_MSG(Name, Msg)                   \
@@ -74,7 +74,7 @@ DiagnosticBuilder::~DiagnosticBuilder()
    finalize();
 }
 
-string DiagnosticBuilder::prepareMessage(llvm::StringRef str)
+string DiagnosticBuilder::prepareMessage(std::string_view str)
 {
    auto buf = llvm::MemoryBuffer::getMemBuffer(str);
 
@@ -159,7 +159,7 @@ void DiagnosticBuilder::appendArgumentString(unsigned idx, std::string &str)
 
 void DiagnosticBuilder::handleFunction(unsigned idx, lex::Lexer& lex,
                                        std::string &msg) {
-   llvm::StringRef funcName;
+   std::string_view funcName;
    if (lex.currentTok().is_keyword()) {
       switch (lex.currentTok().getKind()) {
          case tok::kw_if:
@@ -367,7 +367,7 @@ void DiagnosticBuilder::finalize()
       Len = lineEndIndex - newlineIndex - 1;
    }
 
-   llvm::StringRef ErrLine(Buf->getBufferStart() + newlineIndex + 1, Len);
+   std::string_view ErrLine(Buf->getBufferStart() + newlineIndex + 1, Len);
 
    // show carets for any given single source location, and tildes for source
    // ranges (but only on the error line)
@@ -475,7 +475,7 @@ DiagnosticBuilder& DiagnosticBuilder::operator<<(string const& str)
    return *this;
 }
 
-DiagnosticBuilder& DiagnosticBuilder::operator<<(llvm::Twine const &str)
+DiagnosticBuilder& DiagnosticBuilder::operator<<(std::string const &str)
 {
    Engine.ArgKinds[Engine.NumArgs] = DiagnosticsEngine::ak_string;
    Engine.StringArgs[Engine.NumArgs] = str.str();
@@ -484,7 +484,7 @@ DiagnosticBuilder& DiagnosticBuilder::operator<<(llvm::Twine const &str)
    return *this;
 }
 
-DiagnosticBuilder& DiagnosticBuilder::operator<<(llvm::StringRef str)
+DiagnosticBuilder& DiagnosticBuilder::operator<<(std::string_view str)
 {
    Engine.ArgKinds[Engine.NumArgs] = DiagnosticsEngine::ak_string;
    Engine.StringArgs[Engine.NumArgs] = str.str();

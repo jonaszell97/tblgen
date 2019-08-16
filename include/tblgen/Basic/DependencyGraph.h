@@ -1,15 +1,14 @@
-//
-// Created by Jonas Zell on 22.12.17.
-//
 
 #ifndef TBLGEN_DEPENDENCYGRAPH_H
 #define TBLGEN_DEPENDENCYGRAPH_H
 
-#include <llvm/ADT/SmallPtrSet.h>
-#include <llvm/ADT/SmallVector.h>
+#include "tblgen/TableGen.h"
+
+#include <unordered_set>
+#include <vector>
 
 #ifndef NDEBUG
-#  include <llvm/Support/raw_ostream.h>
+#  include <iostream>
 #endif
 
 namespace tblgen {
@@ -71,20 +70,20 @@ public:
 
       const T &getPtr() { return Ptr; }
 
-      const llvm::SmallPtrSet<Vertex*, 4> &getOutgoing() const
+      const std::unordered_set<Vertex*> &getOutgoing() const
       {
          return Outgoing;
       }
 
-      const llvm::SmallPtrSet<Vertex*, 4> &getIncoming() const
+      const std::unordered_set<Vertex*> &getIncoming() const
       {
          return Incoming;
       }
 
    private:
       T Ptr;
-      llvm::SmallPtrSet<Vertex*, 4> Incoming;
-      llvm::SmallPtrSet<Vertex*, 4> Outgoing;
+      std::unordered_set<Vertex*> Incoming;
+      std::unordered_set<Vertex*> Outgoing;
    };
 
    DependencyGraph() = default;
@@ -126,7 +125,7 @@ public:
    template <class Actor>
    bool actOnGraphInOrder(Actor const& act)
    {
-      llvm::SmallVector<T, 8> Order;
+      std::vector<T> Order;
       if (!getEvaluationOrder(Order))
          return false;
 
@@ -136,9 +135,9 @@ public:
       return true;
    }
 
-   std::pair<llvm::SmallVector<T, 8>, bool> constructOrderedList()
+   std::pair<std::vector<T>, bool> constructOrderedList()
    {
-      std::pair<llvm::SmallVector<T, 8>, bool> res;
+      std::pair<std::vector<T>, bool> res;
       res.second = getEvaluationOrder(res.first);
 
       return res;
@@ -154,7 +153,7 @@ public:
       unreachable("order is valid!");
    }
 
-   const llvm::SmallVector<Vertex*, 8> &getVertices() const
+   const std::vector<Vertex*> &getVertices() const
    {
       return Vertices;
    }
@@ -204,19 +203,19 @@ public:
    {
       int i = 0;
       for (auto &Vert : Vertices) {
-         if (i++ != 0) llvm::outs() << "\n\n";
-         llvm::outs() << Fn(Vert->getPtr());
+         if (i++ != 0) std::cout << "\n\n";
+         std::cout << Fn(Vert->getPtr());
          for (auto Out : Vert->getIncoming()) {
-            llvm::outs() << "\n    depends on " << Fn(Out->getPtr());
+            std::cout << "\n    depends on " << Fn(Out->getPtr());
          }
       }
    }
 #endif
 
 private:
-   bool getEvaluationOrder(llvm::SmallVector<T, 8> &Order)
+   bool getEvaluationOrder(std::vector<T> &Order)
    {
-      llvm::SmallPtrSet<Vertex*, 4> VerticesWithoutIncomingEdges;
+      std::unordered_set<Vertex*> VerticesWithoutIncomingEdges;
       for (auto &vert : Vertices)
          if (vert->getIncoming().empty())
             VerticesWithoutIncomingEdges.insert(vert);
@@ -248,7 +247,7 @@ private:
          delete vert;
    }
 
-   llvm::SmallVector<Vertex*, 8> Vertices;
+   std::vector<Vertex*> Vertices;
    bool accessed = false;
 };
 

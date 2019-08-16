@@ -78,8 +78,8 @@ public:
 
    // non-terminating
    DiagnosticBuilder& operator<<(std::string const& str);
-   DiagnosticBuilder& operator<<(llvm::Twine const& str);
-   DiagnosticBuilder& operator<<(llvm::StringRef str);
+   DiagnosticBuilder& operator<<(std::string const& str);
+   DiagnosticBuilder& operator<<(std::string_view str);
    DiagnosticBuilder& operator<<(const char* str);
 
    DiagnosticBuilder& operator<<(size_t i);
@@ -116,7 +116,7 @@ public:
 
 protected:
    void finalize();
-   std::string prepareMessage(llvm::StringRef str);
+   std::string prepareMessage(std::string_view str);
    void handleFunction(unsigned idx, lex::Lexer& lex,
                        std::string &msg);
 

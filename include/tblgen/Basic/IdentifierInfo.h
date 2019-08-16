@@ -28,7 +28,7 @@ class IdentifierInfo {
 public:
    friend class IdentifierTable;
 
-   llvm::StringRef getIdentifier() const
+   std::string_view getIdentifier() const
    {
       return Ident;
    }
@@ -60,20 +60,20 @@ private:
       : keywordTokenKind(lex::tok::sentinel)
    {}
 
-   llvm::StringRef Ident;
+   std::string_view Ident;
    lex::tok::TokenType keywordTokenKind;
 };
 
 class IdentifierTable {
 public:
    using AllocatorTy = llvm::BumpPtrAllocator;
-   using MapTy       = llvm::StringMap<IdentifierInfo*, AllocatorTy>;
+   using MapTy       = std::unordered_map<std::string, IdentifierInfo*, AllocatorTy>;
 
    IdentifierTable(unsigned initialSize = 8192)
       : IdentMap(initialSize)
    {}
 
-   IdentifierInfo &get(llvm::StringRef key)
+   IdentifierInfo &get(std::string_view key)
    {
       auto &Entry = *IdentMap.insert(std::make_pair(key, nullptr)).first;
 
@@ -88,7 +88,7 @@ public:
       return *Info;
    }
 
-   IdentifierInfo &get(llvm::StringRef key, lex::tok::TokenType kind)
+   IdentifierInfo &get(std::string_view key, lex::tok::TokenType kind)
    {
       auto &Info = get(key);
       Info.keywordTokenKind = kind;
@@ -117,7 +117,7 @@ private:
    MapTy IdentMap;
    bool KeywordsAdded = false;
 
-   void addKeyword(lex::tok::TokenType kind, llvm::StringRef kw);
+   void addKeyword(lex::tok::TokenType kind, std::string_view kw);
 };
 
 } // namespace tblgen

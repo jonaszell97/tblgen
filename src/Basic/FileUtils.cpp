@@ -28,7 +28,7 @@ using std::string;
 namespace tblgen {
 namespace fs {
 
-llvm::StringRef getPath(llvm::StringRef fullPath)
+std::string_view getPath(std::string_view fullPath)
 {
    auto period = fullPath.rfind('.');
    auto slash = fullPath.rfind(PathSeperator);
@@ -44,7 +44,7 @@ llvm::StringRef getPath(llvm::StringRef fullPath)
    return fullPath.substr(0, slash + 1);
 }
 
-llvm::StringRef getFileName(llvm::StringRef fullPath)
+std::string_view getFileName(std::string_view fullPath)
 {
    auto period = fullPath.rfind('.');
    auto slash = fullPath.rfind(PathSeperator);
@@ -58,7 +58,7 @@ llvm::StringRef getFileName(llvm::StringRef fullPath)
    return fullPath.substr(slash + 1, period - slash - 1);
 }
 
-llvm::StringRef getExtension(llvm::StringRef fullPath)
+std::string_view getExtension(std::string_view fullPath)
 {
    auto period = fullPath.rfind('.');
    auto slash = fullPath.rfind(PathSeperator);
@@ -72,7 +72,7 @@ llvm::StringRef getExtension(llvm::StringRef fullPath)
    return "";
 }
 
-std::string swapExtension(llvm::StringRef fullPath, llvm::StringRef newExt)
+std::string swapExtension(std::string_view fullPath, std::string_view newExt)
 {
    llvm::SmallString<128> ScratchBuf;
 
@@ -97,7 +97,7 @@ std::string swapExtension(llvm::StringRef fullPath, llvm::StringRef newExt)
    return ScratchBuf.str();
 }
 
-llvm::StringRef getFileNameAndExtension(llvm::StringRef fullPath)
+std::string_view getFileNameAndExtension(std::string_view fullPath)
 {
    auto period = fullPath.rfind('.');
    auto slash = fullPath.rfind(PathSeperator);
@@ -114,17 +114,17 @@ llvm::StringRef getFileNameAndExtension(llvm::StringRef fullPath)
    return "";
 }
 
-bool fileExists(llvm::StringRef name)
+bool fileExists(std::string_view name)
 {
    return llvm::sys::fs::is_regular_file(name);
 }
 
-void createDirectories(llvm::StringRef fullPath)
+void createDirectories(std::string_view fullPath)
 {
    llvm::sys::fs::create_directories(fullPath);
 }
 
-int deleteDirectory(const llvm::Twine& Dir)
+int deleteDirectory(const std::string& Dir)
 {
 #ifdef _WIN32
    return _rmdir(Dir.str().c_str());
@@ -133,7 +133,7 @@ int deleteDirectory(const llvm::Twine& Dir)
 #endif
 }
 
-int deleteFile(llvm::StringRef FileName)
+int deleteFile(std::string_view FileName)
 {
    if (FileName.back() != '\0') {
       return std::remove(FileName.str().data());
@@ -146,7 +146,7 @@ int deleteFile(llvm::StringRef FileName)
 namespace {
 
 template<class iterator>
-std::vector<string> getAllFilesInDirectoryImpl(llvm::StringRef dirName)
+std::vector<string> getAllFilesInDirectoryImpl(std::string_view dirName)
 {
    using Kind = llvm::sys::fs::file_type;
 
@@ -184,7 +184,7 @@ std::vector<string> getAllFilesInDirectoryImpl(llvm::StringRef dirName)
 
 } // anonymous namespace
 
-std::vector<string> getAllFilesInDirectory(llvm::StringRef dirName,
+std::vector<string> getAllFilesInDirectory(std::string_view dirName,
                                            bool recursive) {
    using llvm::sys::fs::recursive_directory_iterator;
    using llvm::sys::fs::directory_iterator;
@@ -195,8 +195,8 @@ std::vector<string> getAllFilesInDirectory(llvm::StringRef dirName,
    return getAllFilesInDirectoryImpl<directory_iterator>(dirName);
 }
 
-string findFileInDirectories(llvm::StringRef fileName,
-                             llvm::ArrayRef<std::string> directories) {
+string findFileInDirectories(std::string_view fileName,
+                             const std::vector<std::string> &directories) {
    if (fileName.front() == fs::PathSeperator) {
       if (fileExists(fileName))
          return fileName;
@@ -254,7 +254,7 @@ string findFileInDirectories(llvm::StringRef fileName,
    return "";
 }
 
-int executeCommand(llvm::StringRef Program, llvm::ArrayRef<string> args)
+int executeCommand(std::string_view Program, const std::vector<string> &args)
 {
    std::unique_ptr<const char*> argArray(new const char*[args.size() + 1]);
    size_t i = 0;
@@ -269,7 +269,7 @@ int executeCommand(llvm::StringRef Program, llvm::ArrayRef<string> args)
    return llvm::sys::ExecuteAndWait(Program, argArray.get());
 }
 
-long long getLastModifiedTime(llvm::Twine const& pathToFile)
+long long getLastModifiedTime(std::string const& pathToFile)
 {
    llvm::sys::fs::file_status stat;
    auto ec = llvm::sys::fs::status(pathToFile, stat);
@@ -283,7 +283,7 @@ long long getLastModifiedTime(llvm::Twine const& pathToFile)
 namespace {
 
 template <class iterator = llvm::sys::fs::directory_iterator, class Handler>
-void iterateOverFilesInDirectory(llvm::StringRef dir, Handler const& H)
+void iterateOverFilesInDirectory(std::string_view dir, Handler const& H)
 {
    using Kind = llvm::sys::fs::file_type;
 
@@ -315,8 +315,8 @@ void iterateOverFilesInDirectory(llvm::StringRef dir, Handler const& H)
 
 } // anonymous namespace
 
-void getAllMatchingFiles(llvm::StringRef fileName,
-                         llvm::SmallVectorImpl<std::string> &Out) {
+void getAllMatchingFiles(std::string_view fileName,
+                         std::vector<std::string> &Out) {
    auto ext = getExtension(fileName);
    auto file = getFileName(fileName);
 
@@ -364,11 +364,11 @@ void getAllMatchingFiles(llvm::StringRef fileName,
    }
 }
 
-void deleteAllFilesInDirectory(const llvm::Twine &Dir)
+void deleteAllFilesInDirectory(const std::string &Dir)
 {
    using it = llvm::sys::fs::recursive_directory_iterator;
 
-   llvm::SmallVector<string, 4> FilesToDelete;
+   std::vector<string> FilesToDelete;
    iterateOverFilesInDirectory<it>(Dir.str(), [&](const string &file) {
       FilesToDelete.push_back(file);
    });
@@ -377,24 +377,24 @@ void deleteAllFilesInDirectory(const llvm::Twine &Dir)
       deleteFile(File);
 }
 
-std::error_code makeAbsolute(llvm::SmallVectorImpl<char> &Buf)
+std::error_code makeAbsolute(std::vector<char> &Buf)
 {
    return llvm::sys::fs::make_absolute(Buf);
 }
 
-llvm::StringRef getLibraryDir()
+std::string_view getLibraryDir()
 {
    // FIXME
    return "/usr/local/lib";
 }
 
-llvm::StringRef getIncludeDir()
+std::string_view getIncludeDir()
 {
    // FIXME
    return "/usr/local/include";
 }
 
-llvm::StringRef getDynamicLibraryExtension()
+std::string_view getDynamicLibraryExtension()
 {
 #if defined(_WIN32)
    return "dll";
@@ -405,7 +405,7 @@ llvm::StringRef getDynamicLibraryExtension()
 #endif
 }
 
-void appendToPath(llvm::SmallVectorImpl<char> &Path, llvm::StringRef Append)
+void appendToPath(std::vector<char> &Path, std::string_view Append)
 {
    if (Path.empty() || Path.back() != PathSeperator)
       Path.push_back(PathSeperator);
@@ -413,12 +413,12 @@ void appendToPath(llvm::SmallVectorImpl<char> &Path, llvm::StringRef Append)
    Path.append(Append.begin(), Append.end());
 }
 
-void appendToPath(llvm::SmallVectorImpl<char> &Path, const llvm::Twine &Append)
+void appendToPath(std::vector<char> &Path, const std::string &Append)
 {
-   appendToPath(Path, llvm::StringRef(Append.str()));
+   appendToPath(Path, std::string_view(Append.str()));
 }
 
-void appendToPath(std::string &Path, const llvm::Twine &Append)
+void appendToPath(std::string &Path, const std::string &Append)
 {
    if (Path.empty() || Path.back() != PathSeperator)
       Path.push_back(PathSeperator);

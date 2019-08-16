@@ -231,7 +231,7 @@ inline char escape_char(char c)
    }
 }
 
-inline void WriteEscapedString(llvm::StringRef str, llvm::raw_ostream &OS)
+inline void WriteEscapedString(std::string_view str, llvm::raw_ostream &OS)
 {
    for (unsigned char c : str) {
       if (isprint(c) && c != '\\' && c != '"') {

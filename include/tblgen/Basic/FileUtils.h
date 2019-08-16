@@ -24,49 +24,49 @@ namespace fs {
    static char PathSeperator = '/';
 #endif
 
-llvm::StringRef getPath(llvm::StringRef fullPath);
-llvm::StringRef getFileName(llvm::StringRef fullPath);
+std::string_view getPath(std::string_view fullPath);
+std::string_view getFileName(std::string_view fullPath);
 
-llvm::StringRef getExtension(llvm::StringRef fullPath);
-llvm::StringRef withoutExtension(llvm::StringRef fullPath);
-std::string swapExtension(llvm::StringRef fileName,
-                          llvm::StringRef newExt);
+std::string_view getExtension(std::string_view fullPath);
+std::string_view withoutExtension(std::string_view fullPath);
+std::string swapExtension(std::string_view fileName,
+                          std::string_view newExt);
 
-int deleteFile(llvm::StringRef FileName);
+int deleteFile(std::string_view FileName);
 
-llvm::StringRef getFileNameAndExtension(llvm::StringRef fullPath);
-bool fileExists(llvm::StringRef name);
+std::string_view getFileNameAndExtension(std::string_view fullPath);
+bool fileExists(std::string_view name);
 
-void createDirectories(llvm::StringRef fullPath);
-int deleteDirectory(const llvm::Twine& Dir);
+void createDirectories(std::string_view fullPath);
+int deleteDirectory(const std::string& Dir);
 
-std::vector<std::string> getAllFilesInDirectory(llvm::StringRef dirName,
+std::vector<std::string> getAllFilesInDirectory(std::string_view dirName,
                                                 bool recursive = false);
 
-void deleteAllFilesInDirectory(const llvm::Twine &Dir);
+void deleteAllFilesInDirectory(const std::string &Dir);
 
-std::string findFileInDirectories(llvm::StringRef fileName,
-                                  llvm::ArrayRef<std::string> directories);
+std::string findFileInDirectories(std::string_view fileName,
+                                  const std::vector<std::string> &directories);
 
-int executeCommand(llvm::StringRef Program, llvm::ArrayRef<std::string> args);
-long long getLastModifiedTime(llvm::Twine const& pathToFile);
+int executeCommand(std::string_view Program, const std::vector<std::string> &args);
+long long getLastModifiedTime(std::string const& pathToFile);
 
-void getAllMatchingFiles(llvm::StringRef fileName,
-                         llvm::SmallVectorImpl<std::string> &Out);
+void getAllMatchingFiles(std::string_view fileName,
+                         std::vector<std::string> &Out);
 
-std::error_code makeAbsolute(llvm::SmallVectorImpl<char> &Buf);
+std::error_code makeAbsolute(std::vector<char> &Buf);
 
-llvm::StringRef getLibraryDir();
-llvm::StringRef getIncludeDir();
+std::string_view getLibraryDir();
+std::string_view getIncludeDir();
 std::string getApplicationDir();
 
-llvm::StringRef getDynamicLibraryExtension();
+std::string_view getDynamicLibraryExtension();
 
-void appendToPath(llvm::SmallVectorImpl<char> &Path, llvm::StringRef Append);
-void appendToPath(llvm::SmallVectorImpl<char> &Path, const llvm::Twine &Append);
-void appendToPath(std::string &Path, const llvm::Twine &Append);
+void appendToPath(std::vector<char> &Path, std::string_view Append);
+void appendToPath(std::vector<char> &Path, const std::string &Append);
+void appendToPath(std::string &Path, const std::string &Append);
 
-std::string getTmpFileName(llvm::StringRef Ext);
+std::string getTmpFileName(std::string_view Ext);
 std::string exec(const std::string &cmd);
 
 } // namespace fs

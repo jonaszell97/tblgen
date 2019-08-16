@@ -50,7 +50,7 @@ public:
 
    Lexer(IdentifierTable &Idents,
          DiagnosticsEngine &Diags,
-         llvm::ArrayRef<Token> Tokens,
+         const std::vector<Token> &Tokens,
          unsigned sourceId,
          unsigned offset = 1);
 
@@ -59,12 +59,12 @@ public:
 #endif
    ~Lexer() = default;
 
-   void reset(llvm::ArrayRef<Token> Tokens);
+   void reset(const std::vector<Token> &Tokens);
 
    void lexDiagnostic();
    void lexStringInterpolation();
 
-   llvm::StringRef getCurrentIdentifier() const;
+   std::string_view getCurrentIdentifier() const;
 
    enum class Mode : int {
       /// No special lexing required.
@@ -102,7 +102,7 @@ public:
 
    private:
       Lexer &L;
-      llvm::SmallVector<Token, 8> Tokens;
+      std::vector<Token> Tokens;
 
       Token LastTok;
       Token CurTok;
@@ -172,7 +172,7 @@ public:
    bool eof() const { return AtEOF; }
    bool interpolation() const { return InInterpolation; }
 
-   void insertLookaheadTokens(llvm::ArrayRef<Token> Toks)
+   void insertLookaheadTokens(const std::vector<Token> &Toks)
    {
       LookaheadVec.append(Toks.begin(), Toks.end());
    }
@@ -211,7 +211,7 @@ protected:
    Token skipSingleLineComment();
    Token skipMultiLineComment();
 
-   tok::TokenType getBuiltinOperator(llvm::StringRef str);
+   tok::TokenType getBuiltinOperator(std::string_view str);
 
    template<class ...Args>
    Token makeToken(Args&&... args)
@@ -240,7 +240,7 @@ protected:
 
    /// Vector for tokens that we already lexed via lookahead or some other
    /// operation.
-   llvm::SmallVector<Token, 16> LookaheadVec;
+   std::vector<Token> LookaheadVec;
 
    /// ID of the source file we're lexing.
    unsigned sourceId = 0;

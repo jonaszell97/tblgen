@@ -46,7 +46,7 @@ private:
    RecordKeeper *RK;
 
    lex::Lexer::LookaheadRAII *LR = nullptr;
-   llvm::StringMap<Value*> ForEachVals;
+   std::unordered_map<std::string, Value*> ForEachVals;
 
    LLVM_ATTRIBUTE_NORETURN
    void abortBP();
@@ -57,7 +57,7 @@ private:
 
    void parseClass();
    void parseTemplateParams(Class *C,
-                            llvm::SmallVectorImpl<size_t> &fieldParameters);
+                            std::vector<size_t> &fieldParameters);
    void parseBases(Class *C);
    void parseFieldDecl(Class *C);
    void parseOverrideDecl(Class *C);
@@ -68,7 +68,7 @@ private:
 
    void finalizeRecord(Record &R);
    void validateTemplateArgs(Class &C,
-                             llvm::SmallVectorImpl<SourceLocation> &locs,
+                             std::vector<SourceLocation> &locs,
                              std::vector<Value*> &givenParams);
 
    void parseEnum();
@@ -82,14 +82,14 @@ private:
    void parsePrint();
    void parseNamespace();
 
-   llvm::StringRef tryParseIdentifier();
+   std::string_view tryParseIdentifier();
 
    Type *parseType();
    Value *parseExpr(Type *contextualTy = nullptr);
    Value *parseFunction(Type *contextualTy = nullptr);
 
    void parseTemplateArgs(std::vector<Value*> &args,
-                          llvm::SmallVectorImpl<SourceLocation> &locs,
+                          std::vector<SourceLocation> &locs,
                           Class *forClass);
 
    struct NamespaceScope {
@@ -110,7 +110,7 @@ private:
    };
 
    struct ForEachScope {
-      ForEachScope(Parser &P, llvm::StringRef name, Value *V)
+      ForEachScope(Parser &P, std::string_view name, Value *V)
          : P(P), name(name)
       {
          P.ForEachVals.try_emplace(name, V);
@@ -123,10 +123,10 @@ private:
 
    private:
       Parser &P;
-      llvm::StringRef name;
+      std::string_view name;
    };
 
-   Value *getForEachVal(llvm::StringRef name)
+   Value *getForEachVal(std::string_view name)
    {
       auto it = ForEachVals.find(name);
       if (it != ForEachVals.end())

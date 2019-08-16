@@ -8,7 +8,7 @@ using namespace tblgen;
 using namespace tblgen::diag;
 
 Diagnostic::Diagnostic(DiagnosticsEngine &Engine,
-                       llvm::StringRef Msg,
+                       std::string_view Msg,
                        SeverityLevel Severity)
    : Engine(Engine), Msg(Msg), Severity(Severity)
 { }
@@ -19,7 +19,7 @@ DiagnosticsEngine::DiagnosticsEngine(DiagnosticConsumer *Consumer,
      TooManyErrorsMsgEmitted(false)
 {}
 
-void DiagnosticsEngine::finalizeDiag(llvm::StringRef msg,
+void DiagnosticsEngine::finalizeDiag(std::string_view msg,
                                      SeverityLevel Sev) {
    NumArgs = 0;
    NumSourceRanges = 0;

@@ -39,7 +39,7 @@ Parser::~Parser()
 
 void Parser::abortBP()
 {
-   llvm::outs().flush();
+   std::cout.flush();
    std::exit(1);
 }
 
@@ -115,7 +115,7 @@ void Parser::parseClass()
    auto C = RK->CreateClass(name, currentTok().getSourceLoc());
    currentClass = C;
 
-   llvm::SmallVector<size_t, 8> fieldParameters;
+   std::vector<size_t> fieldParameters;
 
    if (peek().is(tok::smaller)) {
       advance();
@@ -184,7 +184,7 @@ void Parser::parseClassLevelDecl(Class *C)
 }
 
 void Parser::parseTemplateParams(Class *C,
-                                llvm::SmallVectorImpl<size_t> &fieldParameters){
+                                std::vector<size_t> &fieldParameters){
    assert(currentTok().is(tok::smaller));
    advance();
 
@@ -252,7 +252,7 @@ void Parser::parseBases(Class *C)
          abortBP();
       }
 
-      llvm::SmallVector<SourceLocation, 8> locs;
+      std::vector<SourceLocation> locs;
       std::vector<Value *> templateArgs;
       if (peek().is(tok::smaller)) {
          advance();
@@ -413,7 +413,7 @@ static bool typesCompatible(Type *given, Type *needed)
 }
 
 static TemplateParamResult checkTemplateParams(Class &C,
-                                               llvm::SmallVectorImpl<SourceLocation> &locs,
+                                               std::vector<SourceLocation> &locs,
                                                std::vector<Value*> &givenParams) {
    auto &neededParams = C.getParameters();
    if (givenParams.size() > neededParams.size())
@@ -444,7 +444,7 @@ static TemplateParamResult checkTemplateParams(Class &C,
 }
 
 void Parser::validateTemplateArgs(Class &Base,
-                                  llvm::SmallVectorImpl<SourceLocation> &locs,
+                                  std::vector<SourceLocation> &locs,
                                   std::vector<Value *> &templateArgs) {
    auto checkResult = checkTemplateParams(Base, locs, templateArgs);
    switch (checkResult.kind) {
@@ -580,7 +580,7 @@ void Parser::parseBases(Record *R)
          abortBP();
       }
 
-      llvm::SmallVector<SourceLocation, 8> locs;
+      std::vector<SourceLocation> locs;
       std::vector<Value *> templateArgs;
       if (peek().is(tok::smaller)) {
          advance();
@@ -638,7 +638,7 @@ void Parser::parseFieldDef(Record *R)
    R->addOwnField(loc, name, FTy, value);
 }
 
-llvm::StringRef Parser::tryParseIdentifier()
+std::string_view Parser::tryParseIdentifier()
 {
    if (currentTok().is(tok::ident))
       return currentTok().getIdentifier();
@@ -1288,7 +1288,7 @@ Value* Parser::parseExpr(Type *contextualTy)
       else if (auto Base = RK->lookupClass(ident)) {
          auto BeginLoc = currentTok().getSourceLoc();
 
-         llvm::SmallVector<SourceLocation, 8> locs;
+         std::vector<SourceLocation> locs;
          std::vector<Value *> templateArgs;
          if (peek().is(tok::smaller)) {
             advance();
@@ -1371,7 +1371,7 @@ Value* Parser::parseExpr(Type *contextualTy)
 
          expect(tok::close_square);
 
-         llvm::StringRef Key = cast<StringLiteral>(KeyVal)->getVal();
+         std::string_view Key = cast<StringLiteral>(KeyVal)->getVal();
          if (auto *DL = dyn_cast<DictLiteral>(Val)) {
             auto *AccessedVal = DL->getValue(Key);
             if (!AccessedVal) {
@@ -1525,8 +1525,8 @@ Value* Parser::parseFunction(Type *contextualTy)
 
    advance();
 
-   llvm::SmallVector<SourceLocation, 8> argLocs;
-   llvm::SmallVector<Value*, 8> args;
+   std::vector<SourceLocation> argLocs;
+   std::vector<Value*> args;
 
    while (!currentTok().is(tok::close_paren)) {
       argLocs.push_back(currentTok().getSourceLoc());
@@ -1549,7 +1549,7 @@ Value* Parser::parseFunction(Type *contextualTy)
       EXPECT_AT_LEAST_ARGS(1);
 
       Class *CommonBase = nullptr;
-      llvm::SmallVector<Record *, 8> Records;
+      std::vector<Record *> Records;
 
       size_t i = 0;
       for (auto &arg : args) {
@@ -1713,7 +1713,7 @@ Value* Parser::parseFunction(Type *contextualTy)
       std::copy(str.begin(), str.end(), Mem);
 
       return new(TG) StringLiteral(args.front()->getType(),
-                                   llvm::StringRef(Mem, str.size()));
+                                   std::string_view(Mem, str.size()));
    }
    case Eq:
    case Ne: {
@@ -1762,7 +1762,7 @@ Value* Parser::parseFunction(Type *contextualTy)
 #undef EXPECT_ARG_VALUE
 
 void Parser::parseTemplateArgs(std::vector<Value *> &args,
-                               llvm::SmallVectorImpl<SourceLocation> &locs,
+                               std::vector<SourceLocation> &locs,
                                Class *forClass) {
    assert(currentTok().is(tok::smaller));
    advance();

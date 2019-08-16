@@ -109,7 +109,7 @@ void Token::rawRepr(llvm::SmallString<N> &s) const
    switch (kind) {
    case tok::charliteral:
    case tok::stringliteral:
-      s += llvm::StringRef(reinterpret_cast<const char*>(Ptr) - 1,
+      s += std::string_view(reinterpret_cast<const char*>(Ptr) - 1,
                            Data + 2);
       break;
 #  define TBLGEN_PUNCTUATOR_TOKEN(Name, Spelling)                               \
@@ -130,7 +130,7 @@ void Token::toString(llvm::SmallString<N> &s) const
 
 void Token::dump() const
 {
-   print(llvm::errs());
+   print(std::cerr);
 }
 
 void Token::print(llvm::raw_ostream &OS) const
@@ -167,7 +167,7 @@ void Token::print(llvm::raw_ostream &OS) const
    }
    case tok::charliteral:
    case tok::stringliteral:
-      OS << llvm::StringRef(reinterpret_cast<const char*>(Ptr) - 1, Data + 2);
+      OS << std::string_view(reinterpret_cast<const char*>(Ptr) - 1, Data + 2);
       break;
    case tok::fpliteral:
    case tok::integerliteral:
@@ -210,7 +210,7 @@ bool Token::is(tblgen::IdentifierInfo *II) const
    return getIdentifierInfo() == II;
 }
 
-bool Token::isIdentifier(llvm::StringRef str) const
+bool Token::isIdentifier(std::string_view str) const
 {
    if (!is_identifier())
       return false;
@@ -218,7 +218,7 @@ bool Token::isIdentifier(llvm::StringRef str) const
    return getIdentifierInfo()->getIdentifier().equals(str);
 }
 
-bool Token::isIdentifierStartingWith(llvm::StringRef str) const
+bool Token::isIdentifierStartingWith(std::string_view str) const
 {
    if (!is_identifier())
       return false;
@@ -226,7 +226,7 @@ bool Token::isIdentifierStartingWith(llvm::StringRef str) const
    return getIdentifierInfo()->getIdentifier().startswith(str);
 }
 
-bool Token::isIdentifierEndingWith(llvm::StringRef str) const
+bool Token::isIdentifierEndingWith(std::string_view str) const
 {
    if (!is_identifier())
       return false;
@@ -244,7 +244,7 @@ bool Token::isWhitespace() const
    }
 }
 
-llvm::StringRef Token::getIdentifier() const
+std::string_view Token::getIdentifier() const
 {
    return getIdentifierInfo()->getIdentifier();
 }
@@ -274,7 +274,7 @@ llvm::APInt Token::getIntegerValue() const
       }
    }
 
-   llvm::StringRef str(txt.data() + offset, txt.size() - offset);
+   std::string_view str(txt.data() + offset, txt.size() - offset);
    return llvm::APInt(64, str, base);
 }
 

@@ -102,11 +102,11 @@ private:
 
 class StringLiteral: public Value {
 public:
-   explicit StringLiteral(Type *Ty, llvm::StringRef Val)
+   explicit StringLiteral(Type *Ty, std::string_view Val)
       : Value(StringLiteralID, Ty), Val(Val)
    { }
 
-   llvm::StringRef getVal() const
+   std::string_view getVal() const
    {
       return Val;
    }
@@ -115,7 +115,7 @@ public:
    { return V->getTypeID() == StringLiteralID;}
 
 private:
-   llvm::StringRef Val;
+   std::string_view Val;
 };
 
 class CodeBlock: public Value {
@@ -124,7 +124,7 @@ public:
       : Value(CodeBlockID, Ty), Code(move(Val))
    { }
 
-   llvm::StringRef getCode() const
+   std::string_view getCode() const
    {
       return Code;
    }
@@ -166,12 +166,12 @@ public:
                                      ->getVal(), Values[i]);
    }
 
-   const llvm::StringMap<Value*> &getValues() const
+   const std::unordered_map<std::string, Value*> &getValues() const
    {
       return Values;
    }
 
-   Value *getValue(llvm::StringRef key) const
+   Value *getValue(std::string_view key) const
    {
       auto it = Values.find(key);
       if (it != Values.end())
@@ -184,16 +184,16 @@ public:
    { return V->getTypeID() == DictLiteralID;}
 
 private:
-   llvm::StringMap<Value*> Values;
+   std::unordered_map<std::string, Value*> Values;
 };
 
 class IdentifierVal: public Value {
 public:
-   explicit IdentifierVal(Type *Ty, llvm::StringRef Val)
+   explicit IdentifierVal(Type *Ty, std::string_view Val)
       : Value(IdentifierValID, Ty), Val(Val)
    { }
 
-   llvm::StringRef getVal() const
+   std::string_view getVal() const
    {
       return Val;
    }
@@ -202,7 +202,7 @@ public:
    { return V->getTypeID() == IdentifierValID;}
 
 private:
-   llvm::StringRef Val;
+   std::string_view Val;
 };
 
 class RecordVal: public Value {
@@ -241,7 +241,7 @@ private:
 
 class DictAccessExpr: public Value {
 public:
-   explicit DictAccessExpr(Value *dict, llvm::StringRef key)
+   explicit DictAccessExpr(Value *dict, std::string_view key)
       : Value(DictAccessExprID, nullptr), dict(dict), key(key)
    {}
 
@@ -250,7 +250,7 @@ public:
       return dict;
    }
 
-   const llvm::StringRef &getKey() const
+   const std::string_view &getKey() const
    {
       return key;
    }
@@ -260,7 +260,7 @@ public:
 
 private:
    Value *dict;
-   llvm::StringRef key;
+   std::string_view key;
 };
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Value const *V);

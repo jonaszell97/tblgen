@@ -31,7 +31,7 @@ class Record;
 
 class RecordField {
 public:
-   RecordField(llvm::StringRef name,
+   RecordField(std::string_view name,
                Type *type,
                Value *defaultValue,
                SourceLocation declLoc,
@@ -40,7 +40,7 @@ public:
         declLoc(declLoc), associatedTemplateParm(associatedTemplateParm)
    {}
 
-   llvm::StringRef getName() const
+   std::string_view getName() const
    {
       return name;
    }
@@ -75,7 +75,7 @@ public:
    friend class Record;
 
 private:
-   llvm::StringRef name;
+   std::string_view name;
    Type *type;
    Value *defaultValue;
    SourceLocation declLoc;
@@ -106,7 +106,7 @@ public:
       std::vector<Value*> templateArgs;
    };
 
-   bool addField(llvm::StringRef name,
+   bool addField(std::string_view name,
                  Type *type,
                  Value *defaultValue,
                  SourceLocation declLoc,
@@ -120,7 +120,7 @@ public:
       return true;
    }
 
-   bool addOverride(llvm::StringRef name,
+   bool addOverride(std::string_view name,
                     Type *type,
                     Value *defaultValue,
                     SourceLocation declLoc) {
@@ -131,7 +131,7 @@ public:
       return true;
    }
 
-   bool addTemplateParam(llvm::StringRef name,
+   bool addTemplateParam(std::string_view name,
                          Type *type,
                          Value *defaultValue,
                          SourceLocation declLoc) {
@@ -148,7 +148,7 @@ public:
       bases.emplace_back(Base, move(templateParams));
    }
 
-   llvm::StringRef getName() const
+   std::string_view getName() const
    {
       return name;
    }
@@ -158,7 +158,7 @@ public:
       return declLoc;
    }
 
-   RecordField *getTemplateParameter(llvm::StringRef name) const
+   RecordField *getTemplateParameter(std::string_view name) const
    {
       for (auto &field : parameters)
          if (field.getName() == name)
@@ -167,7 +167,7 @@ public:
       return nullptr;
    }
 
-   RecordField* getField(llvm::StringRef name) const
+   RecordField* getField(std::string_view name) const
    {
       auto F = getOwnField(name);
       if (F)
@@ -180,7 +180,7 @@ public:
       return nullptr;
    }
 
-   RecordField* getOverride(llvm::StringRef name) const
+   RecordField* getOverride(std::string_view name) const
    {
       auto F = getOwnOverride(name);
       if (F)
@@ -193,7 +193,7 @@ public:
       return nullptr;
    }
 
-   RecordField* getOwnField(llvm::StringRef name) const
+   RecordField* getOwnField(std::string_view name) const
    {
       for (auto &field : fields)
          if (field.getName() == name)
@@ -202,7 +202,7 @@ public:
       return nullptr;
    }
 
-   RecordField* getOwnOverride(llvm::StringRef name) const
+   RecordField* getOwnOverride(std::string_view name) const
    {
       for (auto &field : overrides)
          if (field.getName() == name)
@@ -252,13 +252,13 @@ public:
    friend class RecordKeeper;
 
 private:
-   Class(RecordKeeper &RK, llvm::StringRef name, SourceLocation declLoc)
+   Class(RecordKeeper &RK, std::string_view name, SourceLocation declLoc)
       : RK(RK), name(name), declLoc(declLoc)
    {}
 
    RecordKeeper &RK;
 
-   llvm::StringRef name;
+   std::string_view name;
    SourceLocation declLoc;
 
    std::vector<BaseClass> bases;
@@ -282,19 +282,19 @@ inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Class *C)
 
 class Record {
 public:
-   void addOwnField(SourceLocation loc, llvm::StringRef key,
+   void addOwnField(SourceLocation loc, std::string_view key,
                     Type *Ty, Value *V) {
       auto &F = ownFields.emplace_back(key, Ty, V, loc);
       auto &Entry = *fieldValues.try_emplace(key, V).first;
       F.name = Entry.getKey();
    }
 
-   void setFieldValue(llvm::StringRef key, Value *V)
+   void setFieldValue(std::string_view key, Value *V)
    {
       fieldValues[key] = V;
    }
 
-   const llvm::StringRef &getName() const
+   const std::string_view &getName() const
    {
       return name;
    }
@@ -309,7 +309,7 @@ public:
       return bases;
    }
 
-   const llvm::StringMap<Value *> &getFieldValues() const
+   const std::unordered_map<std::string, Value *> &getFieldValues() const
    {
       return fieldValues;
    }
@@ -319,13 +319,13 @@ public:
       bases.emplace_back(Base, move(templateParams));
    }
 
-   bool hasField(llvm::StringRef name) const
+   bool hasField(std::string_view name) const
    {
       auto it = fieldValues.find(name);
       return it != fieldValues.end();
    }
 
-   Type *getFieldType(llvm::StringRef fieldName) const
+   Type *getFieldType(std::string_view fieldName) const
    {
       for (auto &B : bases) {
          if (auto F = B.getBase()->getField(fieldName))
@@ -335,7 +335,7 @@ public:
       return nullptr;
    }
 
-   Value *getFieldValue(llvm::StringRef fieldName) const
+   Value *getFieldValue(std::string_view fieldName) const
    {
       auto it = fieldValues.find(fieldName);
       if (it != fieldValues.end())
@@ -349,7 +349,7 @@ public:
       return ownFields;
    }
 
-   RecordField *getOwnField(llvm::StringRef name)
+   RecordField *getOwnField(std::string_view name)
    {
       for (auto &f : ownFields)
          if (f.getName() == name)
@@ -382,7 +382,7 @@ public:
    friend class RecordKeeper;
 
 private:
-   Record(RecordKeeper &RK, llvm::StringRef name, SourceLocation declLoc)
+   Record(RecordKeeper &RK, std::string_view name, SourceLocation declLoc)
       : RK(RK), name(name), declLoc(declLoc)
    {
    }
@@ -394,13 +394,13 @@ private:
 
    RecordKeeper &RK;
 
-   llvm::StringRef name;
+   std::string_view name;
    SourceLocation declLoc;
 
    std::vector<Class::BaseClass> bases;
    std::vector<RecordField> ownFields;
 
-   llvm::StringMap<Value*> fieldValues;
+   std::unordered_map<std::string, Value*> fieldValues;
 
    bool IsAnonymous = false;
 };
@@ -418,21 +418,21 @@ inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Record *R)
 }
 
 struct EnumCase {
-   llvm::StringRef caseName;
+   std::string_view caseName;
    uint64_t caseValue;
 };
 
 class Enum {
 public:
-   void addCase(llvm::StringRef caseName, llvm::Optional<uint64_t> caseVal = llvm::None);
+   void addCase(std::string_view caseName, llvm::Optional<uint64_t> caseVal = llvm::None);
 
-   llvm::Optional<uint64_t> getCaseValue(llvm::StringRef caseName) const;
-   llvm::Optional<llvm::StringRef> getCaseName(uint64_t caseVal) const;
+   llvm::Optional<uint64_t> getCaseValue(std::string_view caseName) const;
+   llvm::Optional<std::string_view> getCaseName(uint64_t caseVal) const;
 
-   EnumCase *getCase(llvm::StringRef caseName) const;
+   EnumCase *getCase(std::string_view caseName) const;
    EnumCase *getCase(uint64_t caseVal) const;
 
-   bool hasCase(llvm::StringRef caseName) const
+   bool hasCase(std::string_view caseName) const
    {
       return casesByName.find(caseName) != casesByName.end();
    }
@@ -442,7 +442,7 @@ public:
       return casesByValue.find(caseVal) != casesByValue.end();
    }
 
-   const llvm::StringRef &getName() const
+   const std::string_view &getName() const
    {
       return name;
    }
@@ -457,18 +457,18 @@ public:
    friend class RecordKeeper;
 
 private:
-   Enum(RecordKeeper &RK, llvm::StringRef name, SourceLocation declLoc)
+   Enum(RecordKeeper &RK, std::string_view name, SourceLocation declLoc)
       : RK(RK), name(name), declLoc(declLoc)
    {
    }
 
    RecordKeeper &RK;
 
-   llvm::StringRef name;
+   std::string_view name;
    SourceLocation declLoc;
 
-   llvm::StringMap<EnumCase*> casesByName;
-   llvm::DenseMap<uint64_t, EnumCase*> casesByValue;
+   std::unordered_map<std::string, EnumCase*> casesByName;
+   std::unordered_map<uint64_t, EnumCase*> casesByValue;
 };
 
 inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Enum &R)
@@ -486,7 +486,7 @@ inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Enum *R)
 class RecordKeeper {
 public:
    RecordKeeper(TableGen &TG,
-                llvm::StringRef namespaceName = "",
+                std::string_view namespaceName = "",
                 SourceLocation loc = {},
                 RecordKeeper *Parent = nullptr)
       : TG(TG), namespaceName(namespaceName), declLoc(loc), Parent(Parent)
@@ -508,13 +508,13 @@ public:
    };
 
    using MapVectorTy =
-      llvm::MapVector<llvm::StringRef, Record*,
-                      llvm::DenseMap<llvm::StringRef, unsigned>,
-                      std::vector<MapVectorPair<llvm::StringRef, Record*>>>;
+      llvm::MapVector<std::string_view, Record*,
+                      std::unordered_map<std::string_view, unsigned>,
+                      std::vector<MapVectorPair<std::string_view, Record*>>>;
 
-   Record *CreateRecord(llvm::StringRef name, SourceLocation loc);
-   Class *CreateClass(llvm::StringRef name, SourceLocation loc);
-   Enum *CreateEnum(llvm::StringRef name, SourceLocation loc);
+   Record *CreateRecord(std::string_view name, SourceLocation loc);
+   Class *CreateClass(std::string_view name, SourceLocation loc);
+   Enum *CreateEnum(std::string_view name, SourceLocation loc);
 
    [[nodiscard]]
    Record *CreateAnonymousRecord(SourceLocation loc);
@@ -540,17 +540,17 @@ public:
       SourceLocation loc;
    };
 
-   void addValue(llvm::StringRef name,
+   void addValue(std::string_view name,
                  Value *V,
                  SourceLocation loc);
 
-   RecordKeeper *addNamespace(llvm::StringRef name,
+   RecordKeeper *addNamespace(std::string_view name,
                               SourceLocation loc) {
       return &Namespaces.try_emplace(name, TG, name, loc, this)
                         .first->getValue();
    }
 
-   Record *lookupRecord(llvm::StringRef name) const
+   Record *lookupRecord(std::string_view name) const
    {
       auto it = Records.find(name);
       if (it == Records.end()) {
@@ -563,7 +563,7 @@ public:
       return it->getValue();
    }
 
-   Class *lookupClass(llvm::StringRef name) const
+   Class *lookupClass(std::string_view name) const
    {
       auto it = Classes.find(name);
       if (it == Classes.end()) {
@@ -576,7 +576,7 @@ public:
       return it->getValue();
    }
 
-   Enum *lookupEnum(llvm::StringRef name) const
+   Enum *lookupEnum(std::string_view name) const
    {
       auto it = Enums.find(name);
       if (it == Enums.end()) {
@@ -586,7 +586,7 @@ public:
       return it->getValue();
    }
 
-   ValueDecl *lookupValueDecl(llvm::StringRef name) const
+   ValueDecl *lookupValueDecl(std::string_view name) const
    {
       auto it = Values.find(name);
       if (it == Values.end()) {
@@ -599,7 +599,7 @@ public:
       return const_cast<ValueDecl*>(&it->getValue());
    }
 
-   RecordKeeper *lookupNamespace(llvm::StringRef name) const
+   RecordKeeper *lookupNamespace(std::string_view name) const
    {
       auto it = Namespaces.find(name);
       if (it == Namespaces.end()) {
@@ -612,7 +612,7 @@ public:
       return const_cast<RecordKeeper*>(&it->getValue());
    }
 
-   SourceLocation lookupAnyDecl(llvm::StringRef name) const
+   SourceLocation lookupAnyDecl(std::string_view name) const
    {
       if (auto R = lookupRecord(name))
          return R->getDeclLoc();
@@ -632,7 +632,7 @@ public:
       return SourceLocation();
    }
 
-   const llvm::StringMap<Class *> &getAllClasses() const
+   const std::unordered_map<std::string, Class *> &getAllClasses() const
    {
       return Classes;
    }
@@ -642,17 +642,17 @@ public:
       return Records;
    }
 
-   const llvm::StringMap<ValueDecl> &getValueDecls() const
+   const std::unordered_map<std::string, ValueDecl> &getValueDecls() const
    {
       return Values;
    }
 
-   const llvm::StringMap<RecordKeeper> &getAllNamespaces() const
+   const std::unordered_map<std::string, RecordKeeper> &getAllNamespaces() const
    {
       return Namespaces;
    }
 
-   const llvm::StringRef &getNamespaceName() const
+   const std::string_view &getNamespaceName() const
    {
       return namespaceName;
    }
@@ -668,14 +668,14 @@ public:
    }
 
    void getAllDefinitionsOf(Class *C,
-                            llvm::SmallVectorImpl<Record*> &vec) const {
+                            std::vector<Record*> &vec) const {
       for (auto &R : Records)
          if (R.getValue()->inheritsFrom(C))
             vec.push_back(R.getValue());
    }
 
-   void getAllDefinitionsOf(llvm::StringRef className,
-                            llvm::SmallVectorImpl<Record*> &vec) const {
+   void getAllDefinitionsOf(std::string_view className,
+                            std::vector<Record*> &vec) const {
       return getAllDefinitionsOf(lookupClass(className), vec);
    }
 
@@ -687,15 +687,15 @@ public:
 private:
    TableGen &TG;
 
-   llvm::StringRef namespaceName;
+   std::string_view namespaceName;
    SourceLocation declLoc;
    RecordKeeper *Parent;
 
-   llvm::StringMap<Class*> Classes;
+   std::unordered_map<std::string, Class*> Classes;
    MapVectorTy Records;
-   llvm::StringMap<Enum*> Enums;
-   llvm::StringMap<ValueDecl> Values;
-   llvm::StringMap<RecordKeeper> Namespaces;
+   std::unordered_map<std::string, Enum*> Enums;
+   std::unordered_map<std::string, ValueDecl> Values;
+   std::unordered_map<std::string, RecordKeeper> Namespaces;
 };
 
 inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, RecordKeeper &RK)

@@ -18,7 +18,7 @@ class StringSwitch {
 
 public:
   LLVM_ATTRIBUTE_ALWAYS_INLINE
-  explicit StringSwitch(llvm::StringRef S)
+  explicit StringSwitch(std::string_view S)
   : Str(S), Result() { }
 
   // StringSwitch is not copyable.

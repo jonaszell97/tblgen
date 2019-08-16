@@ -35,16 +35,16 @@ class DiagnosticsEngine;
 
 struct Diagnostic {
    Diagnostic(DiagnosticsEngine &Engine,
-              llvm::StringRef Msg,
+              std::string_view Msg,
               diag::SeverityLevel Severity);
 
-   llvm::StringRef getMsg() const { return Msg; }
+   std::string_view getMsg() const { return Msg; }
    diag::SeverityLevel getSeverity() const { return Severity; }
 
    DiagnosticsEngine &Engine;
 
 private:
-   llvm::StringRef Msg;
+   std::string_view Msg;
    diag::SeverityLevel Severity;
 };
 
@@ -53,7 +53,7 @@ public:
    explicit DiagnosticsEngine(DiagnosticConsumer *Consumer = nullptr,
                               fs::FileManager *FileMgr = nullptr);
 
-   void finalizeDiag(llvm::StringRef msg, diag::SeverityLevel Sev);
+   void finalizeDiag(std::string_view msg, diag::SeverityLevel Sev);
 
    unsigned getNumWarnings() const { return NumWarnings; }
    unsigned getNumErrors() const { return NumErrors; }
