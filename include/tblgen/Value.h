@@ -1,15 +1,11 @@
-//
-// Created by Jonas Zell on 01.02.18.
-//
 
 #ifndef TBLGEN_VALUE_H
 #define TBLGEN_VALUE_H
 
-#include <llvm/ADT/APSInt.h>
-#include <llvm/ADT/APFloat.h>
-#include <llvm/ADT/StringMap.h>
-#include <llvm/Support/Casting.h>
+#include "tblgen/Support/Casting.h"
 
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace tblgen {
@@ -62,15 +58,15 @@ protected:
 
 class IntegerLiteral: public Value {
 public:
-   explicit IntegerLiteral(Type *Ty, llvm::APSInt &&Val)
-      : Value(IntegerLiteralID, Ty), Val(std::move(Val))
+   explicit IntegerLiteral(Type *Ty, uint64_t Val)
+      : Value(IntegerLiteralID, Ty), Val(Val)
    { }
 
-   explicit IntegerLiteral(Type *Ty, llvm::APInt &&Val)
-      : Value(IntegerLiteralID, Ty), Val(std::move(Val))
+   explicit IntegerLiteral(Type *Ty, int64_t Val)
+      : Value(IntegerLiteralID, Ty), Val(Val)
    { }
 
-   const llvm::APSInt &getVal() const
+   uint64_t getVal() const
    {
       return Val;
    }
@@ -79,16 +75,16 @@ public:
    { return V->getTypeID() == IntegerLiteralID;}
 
 private:
-   llvm::APSInt Val;
+   uint64_t Val;
 };
 
 class FPLiteral: public Value {
 public:
-   explicit FPLiteral(Type *Ty, llvm::APFloat &&Val)
-      : Value(FPLiteralID, Ty), Val(std::move(Val))
+   explicit FPLiteral(Type *Ty, double Val)
+      : Value(FPLiteralID, Ty), Val(Val)
    { }
 
-   const llvm::APFloat &getVal() const
+   double getVal() const
    {
       return Val;
    }
@@ -97,7 +93,7 @@ public:
    { return V->getTypeID() == FPLiteralID;}
 
 private:
-   llvm::APFloat Val;
+   double Val;
 };
 
 class StringLiteral: public Value {
@@ -106,7 +102,7 @@ public:
       : Value(StringLiteralID, Ty), Val(Val)
    { }
 
-   std::string_view getVal() const
+   const std::string &getVal() const
    {
       return Val;
    }
@@ -115,7 +111,7 @@ public:
    { return V->getTypeID() == StringLiteralID;}
 
 private:
-   std::string_view Val;
+   std::string Val;
 };
 
 class CodeBlock: public Value {
@@ -162,8 +158,8 @@ public:
    {
       assert(Keys.size() == Values.size());
       for (size_t i = 0; i < Keys.size(); ++i)
-         this->Values.try_emplace(llvm::cast<StringLiteral>(Keys[i])
-                                     ->getVal(), Values[i]);
+         this->Values.emplace(support::cast<StringLiteral>(Keys[i])->getVal(),
+            Values[i]);
    }
 
    const std::unordered_map<std::string, Value*> &getValues() const
@@ -171,11 +167,11 @@ public:
       return Values;
    }
 
-   Value *getValue(std::string_view key) const
+   Value *getValue(const std::string &key) const
    {
       auto it = Values.find(key);
       if (it != Values.end())
-         return it->getValue();
+         return it->second;
 
       return nullptr;
    }
@@ -263,7 +259,7 @@ private:
    std::string_view key;
 };
 
-llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Value const *V);
+std::ostream &operator<<(std::ostream &str, Value const *V);
 
 } // namespace tblgen
 

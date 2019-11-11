@@ -2,6 +2,9 @@
 #ifndef TBLGEN_CASTING_H
 #define TBLGEN_CASTING_H
 
+#include <cassert>
+#include <type_traits>
+
 namespace tblgen {
 namespace support {
 
@@ -81,15 +84,6 @@ template<typename To, typename From> struct isa_impl_cl<To, const From> {
    static inline bool doit(const From &Val)
    {
       return isa_impl<To, From>::doit(Val);
-   }
-};
-
-template<typename To, typename From>
-struct isa_impl_cl<To, const std::unique_ptr<From>> {
-   static inline bool doit(const std::unique_ptr<From> &Val)
-   {
-      assert(Val && "isa<> used on a null pointer");
-      return isa_impl_cl<To, From>::doit(*Val);
    }
 };
 
@@ -183,16 +177,6 @@ template<class To, class From> struct cast_retty_impl<To, const From *const> {
    using ret_type = const To *; // Constant pointer arg case, return const Ty*
 };
 
-template<class To, class From>
-struct cast_retty_impl<To, std::unique_ptr<From>> {
-private:
-   using PointerType = typename cast_retty_impl<To, From *>::ret_type;
-   using ResultType = typename std::remove_pointer<PointerType>::type;
-
-public:
-   using ret_type = std::unique_ptr<ResultType>;
-};
-
 template<class To, class From, class SimpleFrom> struct cast_retty_wrap {
    // When the simplified type and the from type are not the same, use the type
    // simplifier to reduce the type, then reuse cast_retty_impl to get the
@@ -272,17 +256,6 @@ inline typename cast_retty<X, Y *>::ret_type cast(Y *Val)
                            typename simplify_type<Y *>::SimpleType>::doit(Val);
 }
 
-template<class X, class Y>
-inline typename cast_retty<X, std::unique_ptr<Y>>::ret_type
-cast(std::unique_ptr<Y> &&Val)
-{
-   assert(isa<X>(Val.get()) && "cast<Ty>() argument of incompatible type!");
-   using ret_type = typename cast_retty<X, std::unique_ptr<Y>>::ret_type;
-   return ret_type(
-       cast_convert_val<X, Y *, typename simplify_type<Y *>::SimpleType>::doit(
-           Val.release()));
-}
-
 // cast_or_null<X> - Functionally identical to cast, except that a null value is
 // accepted.
 //
@@ -315,15 +288,6 @@ inline typename cast_retty<X, Y *>::ret_type cast_or_null(Y *Val)
       return nullptr;
    assert(isa<X>(Val) && "cast_or_null<Ty>() argument of incompatible type!");
    return cast<X>(Val);
-}
-
-template<class X, class Y>
-inline typename cast_retty<X, std::unique_ptr<Y>>::ret_type
-cast_or_null(std::unique_ptr<Y> &&Val)
-{
-   if (!Val)
-      return nullptr;
-   return cast<X>(std::move(Val));
 }
 
 // dyn_cast<X> - Return the argument parameter cast to the specified type.  This

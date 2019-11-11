@@ -1,16 +1,11 @@
-//
-// Created by Jonas Zell on 18.11.17.
-//
 
 #ifndef TBLGEN_FORMAT_H
 #define TBLGEN_FORMAT_H
 
-#include <llvm/ADT/SmallString.h>
-#include <llvm/Support/raw_ostream.h>
-
 #include <cassert>
 #include <cmath>
 #include <ctime>
+#include <ostream>
 #include <string>
 
 namespace tblgen {
@@ -43,7 +38,7 @@ struct Base16Traits {
 };
 
 template<class FormatTraits = Base10Traits, unsigned N>
-void formatInteger(uint64_t val, llvm::SmallString<N> &res)
+void formatInteger(uint64_t val, std::string &res)
 {
    res += FormatTraits::Prefix;
 
@@ -81,10 +76,10 @@ void formatInteger(uint64_t val, llvm::SmallString<N> &res)
 template<class FormatTraits = Base10Traits>
 std::string formatInteger(uint64_t val)
 {
-   llvm::SmallString<128> res;
+   std::string res;
    formatInteger<FormatTraits>(val, res);
 
-   return res.str();
+   return res;
 }
 
 template<class T>
@@ -171,7 +166,7 @@ inline Stream& unescape_char(char c, Stream &out)
 }
 
 template<unsigned N>
-inline llvm::SmallString<N> &unescape_char(char c, llvm::SmallString<N> &out)
+inline std::string &unescape_char(char c, std::string &out)
 {
    switch (c) {
    case '\n':
@@ -231,7 +226,7 @@ inline char escape_char(char c)
    }
 }
 
-inline void WriteEscapedString(std::string_view str, llvm::raw_ostream &OS)
+inline void WriteEscapedString(std::string_view str, std::ostream &OS)
 {
    for (unsigned char c : str) {
       if (isprint(c) && c != '\\' && c != '"') {

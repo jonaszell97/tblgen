@@ -1,13 +1,8 @@
-//
-// Created by Jonas Zell on 04.10.17.
-//
 
 #ifndef TBLGEN_DIAGNOSTICS_H
 #define TBLGEN_DIAGNOSTICS_H
 
 #include "tblgen/Lex/SourceLocation.h"
-
-#include <llvm/Support/raw_ostream.h>
 
 #include <stack>
 #include <string>
@@ -78,18 +73,12 @@ public:
 
    // non-terminating
    DiagnosticBuilder& operator<<(std::string const& str);
-   DiagnosticBuilder& operator<<(std::string const& str);
    DiagnosticBuilder& operator<<(std::string_view str);
    DiagnosticBuilder& operator<<(const char* str);
 
-   DiagnosticBuilder& operator<<(size_t i);
    DiagnosticBuilder& operator<<(int i);
-   DiagnosticBuilder& operator<<(unsigned i)
-   {
-      return *this << (int)i;
-   }
-
-   DiagnosticBuilder& operator<<(llvm::APInt const& API);
+   DiagnosticBuilder& operator<<(uint64_t i);
+   DiagnosticBuilder& operator<<(int64_t i);
 
    DiagnosticBuilder& operator<<(SourceLocation loc);
    DiagnosticBuilder& operator<<(SourceRange loc);
@@ -102,14 +91,14 @@ public:
 
    operator bool() const { return isValid(); }
 
-   void setLoc(SourceLocation loc) const
+   void setLoc(SourceLocation l) const
    {
-      DiagnosticBuilder::loc = SourceRange(loc);
+      this->loc = SourceRange(l);
    }
 
-   void setLoc(SourceRange loc) const
+   void setLoc(SourceRange l) const
    {
-      DiagnosticBuilder::loc = loc;
+      this->loc = l;
    }
 
    void disable() { Disabled = true; }

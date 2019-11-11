@@ -1,13 +1,13 @@
 
 #include "tblgen/Lex/Lexer.h"
 
+#include "tblgen/TableGen.h"
 #include "tblgen/Basic/IdentifierInfo.h"
 #include "tblgen/Message/DiagnosticsEngine.h"
 
 #include <cassert>
+#include <iostream>
 #include <regex>
-#include <llvm/Support/MemoryBuffer.h>
-#include <llvm/Support/raw_ostream.h>
 
 using std::string;
 using tblgen::lex::Token;
@@ -18,16 +18,16 @@ namespace lex {
 
 Lexer::Lexer(IdentifierTable &Idents,
              DiagnosticsEngine &Diags,
-             llvm::MemoryBuffer *buf,
+             const std::string &buf,
              unsigned sourceId,
              unsigned offset,
              const char InterpolationBegin,
              bool primeLexer)
    : Idents(Idents), Diags(Diags),
      sourceId(sourceId),
-     CurPtr(buf->getBufferStart()),
-     BufStart(buf->getBufferStart()),
-     BufEnd(buf->getBufferEnd()),
+     CurPtr(buf.c_str()),
+     BufStart(buf.c_str()),
+     BufEnd(CurPtr + buf.size()),
      InterpolationBegin(InterpolationBegin),
      offset(offset)
 {
@@ -57,7 +57,7 @@ void Lexer::reset(const std::vector<Token> &Tokens)
    assert(IsTokenLexer && "can't reset non-token lexer");
 
    LookaheadVec.clear();
-   LookaheadVec.append(Tokens.begin(), Tokens.end());
+   LookaheadVec.insert(LookaheadVec.end(), Tokens.begin(), Tokens.end());
 
    if (LookaheadVec.empty() || !LookaheadVec.back().is(tok::eof))
       LookaheadVec.emplace_back(tok::eof);
@@ -91,7 +91,7 @@ Lexer::LookaheadRAII::~LookaheadRAII()
    L.CurTok = CurTok;
 
    // Keep the lookahead tokens that we didn't see yet.
-   Tokens.append(L.LookaheadVec.begin() + L.LookaheadIdx, L.LookaheadVec.end());
+   Tokens.insert(Tokens.end(), L.LookaheadVec.begin() + L.LookaheadIdx, L.LookaheadVec.end());
    L.LookaheadVec = std::move(Tokens);
 
    L.LookaheadIdx = 0;
@@ -111,7 +111,7 @@ void Lexer::LookaheadRAII::advance(bool ignoreNewline,
    Tokens.push_back(L.currentTok());
 }
 
-void Lexer::printTokensTo(llvm::raw_ostream &out)
+void Lexer::printTokensTo(std::ostream &out)
 {
    while (!eof()) {
       advance();
@@ -153,22 +153,22 @@ char Lexer::escape_char(char c)
 string Lexer::unescape_char(char c)
 {
    switch (c) {
-      case '\n':
-         return "\\n";
-      case '\a':
-         return "\\a";
-      case '\r':
-         return "\\r";
-      case '\v':
-         return "\\v";
-      case '\t':
-         return "\\t";
-      case '\b':
-         return "\\b";
-      case '\0':
-         return "\\0";
-      default:
-         return string(1, c);
+   case '\n':
+      return "\\n";
+   case '\a':
+      return "\\a";
+   case '\r':
+      return "\\r";
+   case '\v':
+      return "\\v";
+   case '\t':
+      return "\\t";
+   case '\b':
+      return "\\b";
+   case '\0':
+      return "\\0";
+   default:
+      return string(1, c);
    }
 }
 
@@ -196,7 +196,7 @@ Token Lexer::lexNextToken()
    case '\r':
       if (*CurPtr == '\n')
          ++CurPtr;
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
    case '\n':
       kind = tok::newline;
       break;
@@ -795,7 +795,7 @@ void Lexer::lexDiagnostic()
                            break;
                         }
 
-                        LLVM_FALLTHROUGH;
+                        [[fallthrough]];
                      case ',': {
                         // allow one comma to begin the argument
                         if (CurPtr - 1 == StrBegin)
@@ -1180,7 +1180,7 @@ void Lexer::lexOperator()
             return;
          }
 
-         LLVM_FALLTHROUGH;
+         [[fallthrough]];
       case '>':
          if (CurMode == Mode::ParsingTemplateParams
                || CurMode == Mode::ParsingTemplateArgs) {
@@ -1252,7 +1252,7 @@ Token Lexer::skipMultiLineComment()
                return lexNextToken();
             }
 
-            LLVM_FALLTHROUGH;
+            [[fallthrough]];
          default:
             break;
       }

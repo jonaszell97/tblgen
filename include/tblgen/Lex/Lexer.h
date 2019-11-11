@@ -1,6 +1,3 @@
-//
-// Created by Jonas Zell on 18.06.17.
-//
 
 #ifndef LEXER_H
 #define LEXER_H
@@ -8,30 +5,20 @@
 #include "tblgen/Message/Diagnostics.h"
 #include "tblgen/Lex/Token.h"
 
-#include <llvm/ADT/ArrayRef.h>
-#include <llvm/ADT/StringMap.h>
-#include <llvm/Support/MemoryBuffer.h>
-
 #include <string>
 #include <vector>
 
-namespace llvm {
-   class MemoryBuffer;
-} // namespace llvm
-
-namespace tblgen {
-   class IdentifierTable;
-} // namespace tblgen
-
 namespace tblgen {
 
-namespace parse {
-   class Parser;
-} // namespace Parse
+class IdentifierTable;
 
 namespace diag {
    class DiagnosticBuilder;
-} // namespace Parse
+} // namespace diag
+
+namespace parse {
+   class Parser;
+} // namespace parse
 
 namespace lex {
 
@@ -42,11 +29,12 @@ public:
 
    Lexer(IdentifierTable &Idents,
          DiagnosticsEngine &Diags,
-         llvm::MemoryBuffer *buf,
+         const std::string &buf,
          unsigned sourceId,
          unsigned offset = 1,
          const char InterpolationBegin = '$',
          bool primeLexer = true);
+
 
    Lexer(IdentifierTable &Idents,
          DiagnosticsEngine &Diags,
@@ -64,7 +52,7 @@ public:
    void lexDiagnostic();
    void lexStringInterpolation();
 
-   std::string_view getCurrentIdentifier() const;
+   [[nodiscard]] std::string_view getCurrentIdentifier() const;
 
    enum class Mode : int {
       /// No special lexing required.
@@ -94,7 +82,7 @@ public:
    };
 
    struct LookaheadRAII {
-      LookaheadRAII(Lexer &L);
+      explicit LookaheadRAII(Lexer &L);
       ~LookaheadRAII();
 
       void advance(bool ignoreNewline = true,
@@ -158,27 +146,27 @@ public:
 
    const char* getSrc() { return BufStart; }
    const char* getBuffer() { return CurPtr; }
-   unsigned int getSourceId() const { return sourceId; }
+   [[nodiscard]] unsigned int getSourceId() const { return sourceId; }
 
-   unsigned currentIndex() const { return unsigned(CurPtr - BufStart); }
+   [[nodiscard]] unsigned currentIndex() const { return unsigned(CurPtr - BufStart); }
 
-   Token const& currentTok() const { return CurTok; }
-   SourceLocation getSourceLoc() const { return CurTok.getSourceLoc(); }
-   IdentifierTable &getIdents() const { return Idents; }
+   [[nodiscard]] Token const& currentTok() const { return CurTok; }
+   [[nodiscard]] SourceLocation getSourceLoc() const { return CurTok.getSourceLoc(); }
+   [[nodiscard]] IdentifierTable &getIdents() const { return Idents; }
 
-   void printTokensTo(llvm::raw_ostream &out);
+   void printTokensTo(std::ostream &out);
    void dump();
 
-   bool eof() const { return AtEOF; }
-   bool interpolation() const { return InInterpolation; }
+   [[nodiscard]] bool eof() const { return AtEOF; }
+   [[nodiscard]] bool interpolation() const { return InInterpolation; }
 
    void insertLookaheadTokens(const std::vector<Token> &Toks)
    {
-      LookaheadVec.append(Toks.begin(), Toks.end());
+      LookaheadVec.insert(LookaheadVec.end(), Toks.begin(), Toks.end());
    }
 
-   void setCurTok(Token CurTok) { this->CurTok = CurTok; }
-   void setLastTok(Token LastTok) { this->LastTok = LastTok; }
+   void setCurTok(Token t) { this->CurTok = t; }
+   void setLastTok(Token t) { this->LastTok = t; }
    Token getLastTok() const { return LastTok; }
 
    enum ParenKind {

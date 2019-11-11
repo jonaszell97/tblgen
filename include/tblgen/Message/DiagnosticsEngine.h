@@ -1,6 +1,3 @@
-//
-// Created by Jonas Zell on 15.03.18.
-//
 
 #ifndef TBLGEN_DIAGNOSTICSENGINE_H
 #define TBLGEN_DIAGNOSTICSENGINE_H
@@ -14,6 +11,10 @@ namespace tblgen {
 namespace fs {
    class FileManager;
 } // namespace fs
+
+namespace support {
+   class ArenaAllocator;
+} // namespace support
 
 struct Diagnostic;
 
@@ -50,7 +51,8 @@ private:
 
 class DiagnosticsEngine {
 public:
-   explicit DiagnosticsEngine(DiagnosticConsumer *Consumer = nullptr,
+   explicit DiagnosticsEngine(support::ArenaAllocator &Allocator,
+                              DiagnosticConsumer *Consumer = nullptr,
                               fs::FileManager *FileMgr = nullptr);
 
    void finalizeDiag(std::string_view msg, diag::SeverityLevel Sev);
@@ -103,6 +105,8 @@ private:
    enum ArgKind : unsigned char {
       ak_string, ak_integer, ak_qualtype, ak_named_decl
    };
+
+   support::ArenaAllocator &Allocator;
 
    unsigned NumArgs         = 0;
    unsigned NumSourceRanges = 0;

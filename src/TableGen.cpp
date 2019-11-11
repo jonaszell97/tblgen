@@ -1,6 +1,3 @@
-//
-// Created by Jonas Zell on 01.02.18.
-//
 
 #include "tblgen/Message/Diagnostics.h"
 #include "tblgen/TableGen.h"
@@ -45,7 +42,8 @@ static Value *resolveValue(Value *V,
 //            << "value is not a dictionary"
 //            << errorLoc << diag::term;
 
-      auto val = cast<DictLiteral>(dict)->getValue(DA->getKey());
+      std::string key(DA->getKey());
+      auto val = cast<DictLiteral>(dict)->getValue(key);
 //      if (!val)
 //         diag::err(diag::err_generic_error)
 //            << "key does not exist in dictionary"
@@ -83,16 +81,17 @@ implementBaseForRecord(Class::BaseClass const& Base,
                        Record &R,
                        const std::vector<Value *> &BaseTemplateArgs) {
    for (auto &Field : Base.getBase()->getFields()) {
+      std::string fieldName(Field.getName());
       if (auto val = R.getOwnField(Field.getName())) {
-         R.setFieldValue(Field.getName(), val->getDefaultValue());
+         R.setFieldValue(fieldName, val->getDefaultValue());
       }
       else if (auto Override = getOverride(R, Field.getName())) {
-         R.setFieldValue(Field.getName(), resolveValue(Override, Base,
+         R.setFieldValue(fieldName, resolveValue(Override, Base,
                                                        BaseTemplateArgs,
                                                        Field.getDeclLoc()));
       }
       else if (auto def = Field.getDefaultValue()) {
-         R.setFieldValue(Field.getName(), resolveValue(def, Base,
+         R.setFieldValue(fieldName, resolveValue(def, Base,
                                                        BaseTemplateArgs,
                                                        Field.getDeclLoc()));
       }
@@ -103,14 +102,14 @@ implementBaseForRecord(Class::BaseClass const& Base,
                 && "invalid template parameter index");
 
          if (idx < Base.getTemplateArgs().size()) {
-            R.setFieldValue(Field.getName(),
+            R.setFieldValue(fieldName,
                             resolveValue(Base.getTemplateArgs()[idx], Base,
                                          BaseTemplateArgs, Field.getDeclLoc()));
          }
          else {
             auto P = Base.getBase()->getParameters()[idx];
             assert (P.getDefaultValue() && "template parm not supplied!");
-            R.setFieldValue(Field.getName(),
+            R.setFieldValue(fieldName,
                             resolveValue(P.getDefaultValue(), Base,
                                          BaseTemplateArgs,
                                          Field.getDeclLoc()));
@@ -143,7 +142,7 @@ TableGen::FinalizeResult TableGen::finalizeRecord(Record &R)
       if (auto missing = implementBaseForRecord(Base, R,
                                                 Base.getTemplateArgs())) {
          return {
-            RFS_MissingFieldValue, missing->getName(),
+            RFS_MissingFieldValue, std::string(missing->getName()),
             missing->getDeclLoc()
          };
       }

@@ -4,6 +4,7 @@
 #include "tblgen/Message/DiagnosticsEngine.h"
 #include "tblgen/Parser.h"
 #include "tblgen/Record.h"
+#include "tblgen/Support/Allocator.h"
 #include "tblgen/Support/DynamicLibrary.h"
 #include "tblgen/Support/StringSwitch.h"
 #include "tblgen/TableGen.h"
@@ -117,17 +118,22 @@ class TblGenDiagConsumer : public DiagnosticConsumer {
 public:
    void HandleDiagnostic(const Diagnostic &Diag) override
    {
-      std::cerr << Diag.getMsg();
+      std::cout << Diag.getMsg();
+      std::cout.flush();
    }
 };
 
 } // anonymous namespace
 
+extern "C" void __asan_version_mismatch_check_apple_clang_1100() {}
+
 int main(int argc, char **argv)
 {
    fs::FileManager FileMgr;
    TblGenDiagConsumer Consumer;
-   DiagnosticsEngine Diags(&Consumer, &FileMgr);
+
+   ArenaAllocator Allocator;
+   DiagnosticsEngine Diags(Allocator, &Consumer, &FileMgr);
 
    Options opts = parseOptions(Diags, argc, argv);
    if (Diags.getNumErrors() != 0) {
@@ -136,19 +142,18 @@ int main(int argc, char **argv)
 
    if (opts.TGFile.empty()) {
       Diags.Diag(err_generic_error) << "no input file specified";
-
       return 1;
    }
 
-   auto buf = FileMgr.openFile(opts.TGFile);
-   if (!buf.Buf) {
-      Diags.Diag(err_generic_error) << "file not found";
-
+   auto maybeBuf = FileMgr.openFile(opts.TGFile);
+   if (!maybeBuf) {
+      Diags.Diag(err_generic_error) << "file not found: " + opts.TGFile;
       return 1;
    }
 
-   TableGen TG(FileMgr, Diags);
-   Parser parser(TG, *buf.Buf, buf.SourceId);
+   auto &buf = maybeBuf.getValue();
+   TableGen TG(Allocator, FileMgr, Diags);
+   Parser parser(TG, buf.Buf, buf.SourceId);
 
    if (!parser.parse()) {
       return 1;
@@ -182,7 +187,7 @@ int main(int argc, char **argv)
       }
 
       auto Backend
-          = reinterpret_cast<void (*)(llvm::raw_ostream &, RecordKeeper &)>(
+          = reinterpret_cast<void (*)(std::ostream &, RecordKeeper &)>(
               Ptr);
 
       Backend(OS, RK);

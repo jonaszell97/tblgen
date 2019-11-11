@@ -1,9 +1,7 @@
-//
-// Created by Jonas Zell on 04.10.17.
-//
 
 #include "tblgen/Message/Diagnostics.h"
 
+#include "tblgen/TableGen.h"
 #include "tblgen/Basic/IdentifierInfo.h"
 #include "tblgen/Basic/FileManager.h"
 #include "tblgen/Basic/FileUtils.h"
@@ -12,10 +10,6 @@
 #include "tblgen/Message/DiagnosticsEngine.h"
 #include "tblgen/Support/Casting.h"
 #include "tblgen/Support/Format.h"
-
-#include <llvm/ADT/APInt.h>
-#include <llvm/ADT/SmallString.h>
-#include <llvm/Support/MemoryBuffer.h>
 
 #include <cassert>
 #include <cstdlib>
@@ -76,11 +70,11 @@ DiagnosticBuilder::~DiagnosticBuilder()
 
 string DiagnosticBuilder::prepareMessage(std::string_view str)
 {
-   auto buf = llvm::MemoryBuffer::getMemBuffer(str);
+   std::string buf(str);
 
-   IdentifierTable IT(16);
+   IdentifierTable IT(Engine.Allocator, 16);
 
-   Lexer lex(IT, Engine, buf.get(), 0, 1, '$', false);
+   Lexer lex(IT, Engine, buf, 0, 1, '$', false);
    lex.lexDiagnostic();
 
    unsigned short substituted = 0;
@@ -105,7 +99,7 @@ string DiagnosticBuilder::prepareMessage(std::string_view str)
             assert(lex.currentTok().is(tok::integerliteral)
                    && "expected arg index");
 
-            auto txt = lex.currentTok().getText();
+            auto txt = std::string(lex.currentTok().getText());
             auto val = std::stoul(txt);
 
             appendArgumentString(val, msg);
@@ -114,7 +108,7 @@ string DiagnosticBuilder::prepareMessage(std::string_view str)
             assert(lex.currentTok().is(tok::integerliteral)
                    && "expected arg index");
 
-            auto txt = lex.currentTok().getText();
+            auto txt = std::string(lex.currentTok().getText());
             auto val = std::stoull(txt);
             assert(Engine.NumArgs > val && "not enough args provided");
 
@@ -162,11 +156,11 @@ void DiagnosticBuilder::handleFunction(unsigned idx, lex::Lexer& lex,
    std::string_view funcName;
    if (lex.currentTok().is_keyword()) {
       switch (lex.currentTok().getKind()) {
-         case tok::kw_if:
-            funcName = "if";
-            break;
-         default:
-            unreachable("unexpected keyword in diagnostic");
+      case tok::kw_if:
+         funcName = "if";
+         break;
+      default:
+         unreachable("unexpected keyword in diagnostic");
       }
    }
    else {
@@ -214,10 +208,10 @@ void DiagnosticBuilder::handleFunction(unsigned idx, lex::Lexer& lex,
       msg += std::to_string(val);
 
       switch (mod) {
-         case 1: msg += "st"; break;
-         case 2: msg += "nd"; break;
-         case 3: msg += "rd"; break;
-         default: msg += "th"; break;
+      case 1: msg += "st"; break;
+      case 2: msg += "nd"; break;
+      case 3: msg += "rd"; break;
+      default: msg += "th"; break;
       }
    }
    else if (funcName == "plural_s") {
@@ -290,8 +284,7 @@ static bool isNewline(const char *str)
 
 void DiagnosticBuilder::finalize()
 {
-   std::string str;
-   llvm::raw_string_ostream out(str);
+   std::ostringstream out;
 
    auto severity = getSeverity(msg);
    switch (severity) {
@@ -310,7 +303,7 @@ void DiagnosticBuilder::finalize()
    if (hasFakeSourceLoc) {
       out << "\n" << Engine.StringArgs[Engine.NumArgs - 1] << "\n\n";
       out.flush();
-      Engine.finalizeDiag(str, severity);
+      Engine.finalizeDiag(out.str(), severity);
 
       return;
    }
@@ -318,7 +311,7 @@ void DiagnosticBuilder::finalize()
    if (!Engine.NumSourceRanges) {
       out << "\n";
       out.flush();
-      Engine.finalizeDiag(str, severity);
+      Engine.finalizeDiag(out.str(), severity);
 
       return;
    }
@@ -331,9 +324,9 @@ void DiagnosticBuilder::finalize()
    size_t ID = Engine.FileMgr->getSourceId(loc);
    auto File = Engine.FileMgr->getOpenedFile(ID);
 
-   llvm::MemoryBuffer *Buf = File.Buf;
-   size_t srcLen = Buf->getBufferSize();
-   const char *src = Buf->getBufferStart();
+   const std::string &Buf = File.Buf;
+   size_t srcLen = Buf.size();
+   const char *src = Buf.c_str();
 
    // show file name, line number and column
    auto lineAndCol = Engine.FileMgr->getLineAndCol(loc, Buf);
@@ -367,7 +360,7 @@ void DiagnosticBuilder::finalize()
       Len = lineEndIndex - newlineIndex - 1;
    }
 
-   std::string_view ErrLine(Buf->getBufferStart() + newlineIndex + 1, Len);
+   std::string_view ErrLine(Buf.c_str() + newlineIndex + 1, Len);
 
    // show carets for any given single source location, and tildes for source
    // ranges (but only on the error line)
@@ -427,10 +420,10 @@ void DiagnosticBuilder::finalize()
    }
 
    // display line number to the left of the source
-   size_t LinePrefixSize = out.GetNumBytesInBuffer();
+   size_t LinePrefixSize = out.width();
    out << errLineNo << " | ";
 
-   LinePrefixSize = out.GetNumBytesInBuffer() - LinePrefixSize;
+   LinePrefixSize = out.width() - LinePrefixSize;
    out << ErrLine << "\n"
        << std::string(LinePrefixSize, ' ') << Markers << "\n";
 
@@ -445,10 +438,10 @@ void DiagnosticBuilder::finalize()
 
 DiagnosticBuilder& DiagnosticBuilder::operator<<(int i)
 {
-   return *this << (size_t)i;
+   return *this << (int64_t)i;
 }
 
-DiagnosticBuilder& DiagnosticBuilder::operator<<(size_t i)
+DiagnosticBuilder& DiagnosticBuilder::operator<<(uint64_t i)
 {
    Engine.ArgKinds[Engine.NumArgs] = DiagnosticsEngine::ak_integer;
    Engine.OtherArgs[Engine.NumArgs] = i;
@@ -457,10 +450,10 @@ DiagnosticBuilder& DiagnosticBuilder::operator<<(size_t i)
    return *this;
 }
 
-DiagnosticBuilder& DiagnosticBuilder::operator<<(llvm::APInt const &API)
+DiagnosticBuilder& DiagnosticBuilder::operator<<(int64_t i)
 {
-   Engine.ArgKinds[Engine.NumArgs] = DiagnosticsEngine::ak_string;
-   Engine.StringArgs[Engine.NumArgs] = API.toString(10, true);
+   Engine.ArgKinds[Engine.NumArgs] = DiagnosticsEngine::ak_integer;
+   Engine.OtherArgs[Engine.NumArgs] = i;
    ++Engine.NumArgs;
 
    return *this;
@@ -475,19 +468,10 @@ DiagnosticBuilder& DiagnosticBuilder::operator<<(string const& str)
    return *this;
 }
 
-DiagnosticBuilder& DiagnosticBuilder::operator<<(std::string const &str)
-{
-   Engine.ArgKinds[Engine.NumArgs] = DiagnosticsEngine::ak_string;
-   Engine.StringArgs[Engine.NumArgs] = str.str();
-   ++Engine.NumArgs;
-
-   return *this;
-}
-
 DiagnosticBuilder& DiagnosticBuilder::operator<<(std::string_view str)
 {
    Engine.ArgKinds[Engine.NumArgs] = DiagnosticsEngine::ak_string;
-   Engine.StringArgs[Engine.NumArgs] = str.str();
+   Engine.StringArgs[Engine.NumArgs] = std::string(str);
    ++Engine.NumArgs;
 
    return *this;
@@ -534,27 +518,27 @@ DiagnosticBuilder& DiagnosticBuilder::operator<<(opt::Option const &opt)
    using namespace opt;
 
    switch (opt) {
-      case whole_line:
-         showWholeLine = true;
-         break;
-      case show_wiggle:
-         showWiggle = true;
-         break;
-      case no_inst_ctx:
-         noInstCtx = true;
-         break;
-      case no_expansion_info:
-         noExpansionInfo = true;
-         break;
-      case memberwise_init:
-         noteMemberwiseInit = true;
-         break;
-      case no_import_info:
-         noImportInfo = true;
-         break;
-      case show_constness:
-         ShowConst = true;
-         break;
+   case whole_line:
+      showWholeLine = true;
+      break;
+   case show_wiggle:
+      showWiggle = true;
+      break;
+   case no_inst_ctx:
+      noInstCtx = true;
+      break;
+   case no_expansion_info:
+      noExpansionInfo = true;
+      break;
+   case memberwise_init:
+      noteMemberwiseInit = true;
+      break;
+   case no_import_info:
+      noImportInfo = true;
+      break;
+   case show_constness:
+      ShowConst = true;
+      break;
    }
 
    return *this;

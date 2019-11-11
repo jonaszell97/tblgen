@@ -1,6 +1,3 @@
-//
-// Created by Jonas Zell on 30.01.18.
-//
 
 #include "tblgen/Basic/IdentifierInfo.h"
 
@@ -8,18 +5,19 @@ using namespace tblgen::lex;
 
 namespace tblgen {
 
-void IdentifierTable::addKeywords()
+IdentifierInfo &IdentifierTable::get(std::string_view key)
 {
-   if (KeywordsAdded)
-      return;
+   auto it = IdentMap.find(key);
+   if (it != IdentMap.end()) {
+      return *it->second;
+   }
 
-#  define TBLGEN_KEYWORD_TOKEN(Name, Pattern)  \
-   addKeyword(tok::Name, Pattern);
-#  define TBLGEN_POUND_KEYWORD(Name)           \
-   addKeyword(tok::pound_##Name, "#" #Name);
-#  include "tblgen/Lex/Tokens.def"
+   auto *Mem = Allocator.Allocate<IdentifierInfo>();
+   auto *Info = new (Mem) IdentifierInfo;
+   Info->Ident = key;
 
-   KeywordsAdded = true;
+   IdentMap.emplace(Info->Ident, Info);
+   return *Info;
 }
 
 void IdentifierTable::addTblGenKeywords()

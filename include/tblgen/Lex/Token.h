@@ -1,23 +1,12 @@
-//
-// Created by Jonas Zell on 13.06.17.
-//
 
 #ifndef TBLGEN_TOKEN_H
 #define TBLGEN_TOKEN_H
 
-#include <llvm/ADT/StringRef.h>
-
 #include "tblgen/Lex/SourceLocation.h"
 #include "tblgen/Lex/TokenKinds.h"
 
-namespace llvm {
-   template<unsigned N>
-   class SmallString;
-
-   class APInt;
-   class raw_ostream;
-   class FoldingSetNodeID;
-} // namespace llvm
+#include <iosfwd>
+#include <string>
 
 namespace tblgen {
 namespace ast {
@@ -87,8 +76,6 @@ struct Token {
       : kind(tok::space), loc(loc), Data(numSpaces), Ptr(nullptr)
    {}
 
-   void Profile(llvm::FoldingSetNodeID &ID) const;
-
    bool isIdentifier(std::string_view str) const;
    bool isIdentifierStartingWith(std::string_view str) const;
    bool isIdentifierEndingWith(std::string_view str) const;
@@ -99,13 +86,7 @@ struct Token {
    /// Returns false if this was a default constructed token.
    operator bool() const { return kind != tok::sentinel  || loc; }
 
-   template<unsigned N>
-   void toString(llvm::SmallString<N> &s) const;
-
-   template<unsigned N>
-   void rawRepr(llvm::SmallString<N> &s) const;
-
-   void print(llvm::raw_ostream &OS) const;
+   void print(std::ostream &OS) const;
    void dump() const;
 
    tok::TokenType getKind()      const { return kind; }
@@ -172,7 +153,7 @@ struct Token {
       return std::string_view((const char*)Ptr, Data);
    }
 
-   llvm::APInt getIntegerValue() const;
+   uint64_t getIntegerValue() const;
 
    unsigned getNumSpaces() const
    {
@@ -206,8 +187,8 @@ private:
    void *Ptr;
 };
 
-inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
-                                     const tblgen::lex::Token &Tok) {
+inline std::ostream &operator<<(std::ostream &OS,
+                                const tblgen::lex::Token &Tok) {
    Tok.print(OS);
    return OS;
 }

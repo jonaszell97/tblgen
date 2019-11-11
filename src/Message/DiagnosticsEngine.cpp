@@ -1,6 +1,3 @@
-//
-// Created by Jonas Zell on 15.03.18.
-//
 
 #include "tblgen/Message/DiagnosticsEngine.h"
 
@@ -13,9 +10,10 @@ Diagnostic::Diagnostic(DiagnosticsEngine &Engine,
    : Engine(Engine), Msg(Msg), Severity(Severity)
 { }
 
-DiagnosticsEngine::DiagnosticsEngine(DiagnosticConsumer *Consumer,
+DiagnosticsEngine::DiagnosticsEngine(support::ArenaAllocator &Allocator,
+                                     DiagnosticConsumer *Consumer,
                                      fs::FileManager *FileMgr)
-   : Consumer(Consumer), FileMgr(FileMgr),
+   : Allocator(Allocator), Consumer(Consumer), FileMgr(FileMgr),
      TooManyErrorsMsgEmitted(false)
 {}
 

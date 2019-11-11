@@ -1,6 +1,3 @@
-//
-// Created by Jonas Zell on 16.11.17.
-//
 
 #ifndef TBLGEN_SOURCELOCATION_H
 #define TBLGEN_SOURCELOCATION_H
@@ -104,52 +101,5 @@ private:
 };
 
 } // namespace tblgen
-
-namespace llvm {
-
-template <typename T> struct PointerLikeTypeTraits;
-template<class T> struct DenseMapInfo;
-
-template<>
-struct PointerLikeTypeTraits<::tblgen::SourceLocation> {
-public:
-   static inline void *getAsVoidPointer(::tblgen::SourceLocation P)
-   {
-      return reinterpret_cast<void*>(P.getOffset());
-   }
-
-   static inline ::tblgen::SourceLocation getFromVoidPointer(void *P)
-   {
-      return ::tblgen::SourceLocation(
-         static_cast<uint32_t>(reinterpret_cast<uint64_t>(P)));
-   }
-
-   enum { NumLowBitsAvailable = 0 };
-};
-
-template<> struct DenseMapInfo<::tblgen::SourceLocation> {
-   static ::tblgen::SourceLocation getEmptyKey()
-   {
-      return ::tblgen::SourceLocation(static_cast<uint32_t>(-1));
-   }
-
-   static ::tblgen::SourceLocation getTombstoneKey()
-   {
-      return ::tblgen::SourceLocation(static_cast<uint32_t>(-2));
-   }
-
-   static int getHashValue(const ::tblgen::SourceLocation P)
-   {
-      return static_cast<int>(P.getOffset());
-   }
-
-   static bool isEqual(const ::tblgen::SourceLocation LHS,
-                       const ::tblgen::SourceLocation RHS) {
-      return LHS == RHS;
-   }
-};
-
-} // namespace llvm
-
 
 #endif //TBLGEN_SOURCELOCATION_H

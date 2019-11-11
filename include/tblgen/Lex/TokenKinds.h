@@ -1,6 +1,3 @@
-//
-// Created by Jonas Zell on 30.01.18.
-//
 
 #ifndef TBLGEN_TOKENKINDS_H
 #define TBLGEN_TOKENKINDS_H

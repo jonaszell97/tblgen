@@ -1,19 +1,18 @@
-//
-// Created by Jonas Zell on 01.02.18.
-//
 
 #include "tblgen/Record.h"
 #include "tblgen/TableGen.h"
 #include "tblgen/Value.h"
 
-#include <llvm/Support/raw_ostream.h>
+#include <iostream>
+
+using std::string;
 
 namespace tblgen {
 
-Class *RecordKeeper::CreateClass(std::string_view name, SourceLocation loc)
+Class *RecordKeeper::CreateClass(const std::string &name, SourceLocation loc)
 {
    auto C = new (TG) Class(*this, name, loc);
-   Classes.try_emplace(name, C);
+   Classes.emplace(name, C);
 
    return C;
 }
@@ -23,7 +22,7 @@ void Class::dump()
    printTo(std::cerr);
 }
 
-void Class::printTo(llvm::raw_ostream &out)
+void Class::printTo(std::ostream &out)
 {
    out << "class " << name << " ";
    if (!parameters.empty()) {
@@ -90,13 +89,13 @@ void Record::dumpAllValues()
    out << "def " << name << " {\n";
 
    for (auto &F : fieldValues) {
-      out << "   " << F.getKey() << " = " << F.getValue() << "\n";
+      out << "   " << F.first << " = " << F.second << "\n";
    }
 
    out << "}";
 }
 
-void Record::printTo(llvm::raw_ostream &out)
+void Record::printTo(std::ostream &out)
 {
    out << "def " << name << " ";
 
@@ -133,7 +132,7 @@ void Record::printTo(llvm::raw_ostream &out)
    }
 }
 
-void Enum::printTo(llvm::raw_ostream &out)
+void Enum::printTo(std::ostream &out)
 {
    out << "enum " << name << " {\n";
 
@@ -141,21 +140,22 @@ void Enum::printTo(llvm::raw_ostream &out)
    for (auto &Case : casesByName)
    {
       if (i++ != 0) out << ",\n";
-      out << Case.getKey() << " = " << Case.getValue()->caseValue;
+      out << Case.first << " = " << Case.second->caseValue;
    }
 
    out << "\n}";
 }
 
 void Enum::addCase(std::string_view caseName,
-                   llvm::Optional<uint64_t> caseVal)
+                   support::Optional<uint64_t> caseVal)
 {
-   assert(casesByName.count(caseName) == 0 && "duplicate case name");
+   string name(caseName);
+   assert(casesByName.count(name) == 0 && "duplicate case name");
 
    uint64_t val;
    if (caseVal.hasValue())
    {
-      val = caseVal.getValue();
+      val = caseVal;
       assert(casesByValue.count(val) == 0 && "duplicate case value");
    }
    else
@@ -167,36 +167,36 @@ void Enum::addCase(std::string_view caseName,
       }
    }
 
-   auto *c = new(RK.getAllocator()) EnumCase { caseName, val };
-   casesByName.try_emplace(caseName, c);
-   casesByValue.try_emplace(val, c);
+   auto *c = new(RK.getAllocator()) EnumCase { move(name), val };
+   casesByName.emplace(caseName, c);
+   casesByValue.emplace(val, c);
 }
 
-llvm::Optional<uint64_t> Enum::getCaseValue(std::string_view caseName) const
+support::Optional<uint64_t> Enum::getCaseValue(const string &caseName) const
 {
    auto it = casesByName.find(caseName);
    if (it == casesByName.end())
-      return llvm::None;
+      return support::None;
 
-   return it->getValue()->caseValue;
+   return it->second->caseValue;
 }
 
-llvm::Optional<std::string_view> Enum::getCaseName(uint64_t caseVal) const
+support::Optional<std::string_view> Enum::getCaseName(uint64_t caseVal) const
 {
    auto it = casesByValue.find(caseVal);
    if (it == casesByValue.end())
-      return llvm::None;
+      return support::None;
 
-   return it->getSecond()->caseName;
+   return std::string_view(it->second->caseName);
 }
 
-EnumCase *Enum::getCase(std::string_view caseName) const
+EnumCase *Enum::getCase(const string &caseName) const
 {
    auto it = casesByName.find(caseName);
    if (it == casesByName.end())
       return nullptr;
 
-   return it->getValue();
+   return it->second;
 }
 
 EnumCase *Enum::getCase(uint64_t caseVal) const
@@ -205,13 +205,14 @@ EnumCase *Enum::getCase(uint64_t caseVal) const
    if (it == casesByValue.end())
       return nullptr;
 
-   return it->getSecond();
+   return it->second;
 }
 
-Record* RecordKeeper::CreateRecord(std::string_view name, SourceLocation loc)
+Record* RecordKeeper::CreateRecord(const std::string &name, SourceLocation loc)
 {
    auto R = new (TG) Record(*this, name, loc);
-   Records.insert(std::make_pair(name, R));
+   Records.push_back(R);
+   RecordsMap.emplace(name, R);
 
    return R;
 }
@@ -221,7 +222,7 @@ Record* RecordKeeper::CreateAnonymousRecord(tblgen::SourceLocation loc)
    return new(TG) Record(*this, loc);
 }
 
-Enum * RecordKeeper::CreateEnum(std::string_view name,
+Enum * RecordKeeper::CreateEnum(const std::string &name,
                                 tblgen::SourceLocation loc)
 {
    auto E = new (TG) Enum(*this, name, loc);
@@ -235,34 +236,42 @@ void RecordKeeper::dump()
    printTo(std::cerr);
 }
 
-void RecordKeeper::printTo(llvm::raw_ostream &out)
+void RecordKeeper::printTo(std::ostream &out)
 {
    for (auto &C : Classes) {
-      C.getValue()->printTo(out);
+      C.second->printTo(out);
       out << "\n\n";
    }
 
    for (auto &R : Records) {
-      R.getValue()->printTo(out);
+      R->printTo(out);
       out << "\n\n";
    }
 
    for (auto &NS : Namespaces) {
-      out << "namespace " << NS.getValue().getNamespaceName() << " {\n\n";
+      out << "namespace " << NS.second->getNamespaceName() << " {\n\n";
 
-      NS.getValue().printTo(out);
+      NS.second->printTo(out);
 
       out << "\n}";
    }
 }
 
-void RecordKeeper::addValue(std::string_view name,
+void RecordKeeper::addValue(const std::string &name,
                             Value *V,
                             SourceLocation loc) {
    Values[name] = ValueDecl(V, loc);
 }
 
-llvm::BumpPtrAllocator& RecordKeeper::getAllocator() const
+RecordKeeper *RecordKeeper::addNamespace(const std::string &name,
+                                         SourceLocation loc) {
+   auto *RK = new(TG.getAllocator()) RecordKeeper(TG, name, loc, this);
+   Namespaces.emplace(name, RK);
+
+   return RK;
+}
+
+support::ArenaAllocator& RecordKeeper::getAllocator() const
 {
    return TG.getAllocator();
 }

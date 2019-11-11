@@ -2,9 +2,7 @@
 #ifndef TBLGEN_TABLEGENBACKENDS_H
 #define TBLGEN_TABLEGENBACKENDS_H
 
-namespace std {
-   class ostream;
-} // namespace llvm
+#include <iosfwd>
 
 namespace tblgen {
 

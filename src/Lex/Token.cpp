@@ -1,16 +1,13 @@
-//
-// Created by Jonas Zell on 13.06.17.
-//
 
 #include "tblgen/Lex/Token.h"
 
+#include "tblgen/TableGen.h"
 #include "tblgen/Basic/IdentifierInfo.h"
 #include "tblgen/Support/Format.h"
+#include "tblgen/Support/LiteralParser.h"
 
-#include <llvm/ADT/APSInt.h>
-#include <llvm/ADT/SmallString.h>
-#include <llvm/ADT/FoldingSet.h>
-#include <llvm/Support/raw_ostream.h>
+#include <iostream>
+#include <sstream>
 
 using tblgen::lex::tok::TokenType;
 using std::string;
@@ -55,14 +52,6 @@ static constexpr unsigned strLen(const char (&Str)[StrLen])
    return StrLen;
 }
 
-void Token::Profile(llvm::FoldingSetNodeID &ID) const
-{
-   ID.AddInteger(kind);
-   ID.AddPointer(Ptr);
-   ID.AddInteger(Data);
-   ID.AddInteger(loc.getOffset());
-}
-
 SourceLocation Token::getEndLoc() const
 {
    unsigned Length;
@@ -98,42 +87,12 @@ SourceLocation Token::getEndLoc() const
    return SourceLocation(loc.getOffset() + Length - 1);
 }
 
-template<unsigned N>
-void Token::rawRepr(llvm::SmallString<N> &s) const
-{
-   if (kind == tok::space) {
-      s += getText();
-      return;
-   }
-
-   switch (kind) {
-   case tok::charliteral:
-   case tok::stringliteral:
-      s += std::string_view(reinterpret_cast<const char*>(Ptr) - 1,
-                           Data + 2);
-      break;
-#  define TBLGEN_PUNCTUATOR_TOKEN(Name, Spelling)                               \
-   case tok::Name: s += (Spelling); break;
-#  include "tblgen/Lex/Tokens.def"
-   default:
-      toString(s);
-      break;
-   }
-}
-
-template<unsigned N>
-void Token::toString(llvm::SmallString<N> &s) const
-{
-   llvm::raw_svector_ostream OS(s);
-   print(OS);
-}
-
 void Token::dump() const
 {
    print(std::cerr);
 }
 
-void Token::print(llvm::raw_ostream &OS) const
+void Token::print(std::ostream &OS) const
 {
    if (kind == tok::space) {
       OS << getText();
@@ -192,16 +151,6 @@ void Token::print(llvm::raw_ostream &OS) const
    }
 }
 
-template void Token::toString(llvm::SmallString<64>&) const;
-template void Token::toString(llvm::SmallString<128>&) const;
-template void Token::toString(llvm::SmallString<256>&) const;
-template void Token::toString(llvm::SmallString<512>&) const;
-
-template void Token::rawRepr(llvm::SmallString<64>&) const;
-template void Token::rawRepr(llvm::SmallString<128>&) const;
-template void Token::rawRepr(llvm::SmallString<256>&) const;
-template void Token::rawRepr(llvm::SmallString<512>&) const;
-
 bool Token::is(tblgen::IdentifierInfo *II) const
 {
    if (!is_identifier())
@@ -215,23 +164,7 @@ bool Token::isIdentifier(std::string_view str) const
    if (!is_identifier())
       return false;
 
-   return getIdentifierInfo()->getIdentifier().equals(str);
-}
-
-bool Token::isIdentifierStartingWith(std::string_view str) const
-{
-   if (!is_identifier())
-      return false;
-
-   return getIdentifierInfo()->getIdentifier().startswith(str);
-}
-
-bool Token::isIdentifierEndingWith(std::string_view str) const
-{
-   if (!is_identifier())
-      return false;
-
-   return getIdentifierInfo()->getIdentifier().endswith(str);
+   return getIdentifierInfo()->getIdentifier() == str;
 }
 
 bool Token::isWhitespace() const
@@ -249,7 +182,7 @@ std::string_view Token::getIdentifier() const
    return getIdentifierInfo()->getIdentifier();
 }
 
-llvm::APInt Token::getIntegerValue() const
+uint64_t Token::getIntegerValue() const
 {
    assert(kind == tok::integerliteral);
 
@@ -275,23 +208,25 @@ llvm::APInt Token::getIntegerValue() const
    }
 
    std::string_view str(txt.data() + offset, txt.size() - offset);
-   return llvm::APInt(64, str, base);
+   LiteralParser parser(str);
+
+   return parser.parseInteger(64, true).APS;
 }
 
 string Token::toString() const
 {
-   llvm::SmallString<128> str;
-   toString(str);
+   std::ostringstream OS;
+   print(OS);
 
-   return str.str();
+   return OS.str();
 }
 
 string Token::rawRepr() const
 {
-   llvm::SmallString<128> str;
-   rawRepr(str);
+   std::ostringstream OS;
+   print(OS);
 
-   return str.str();
+   return OS.str();
 }
 
 bool Token::is_punctuator() const

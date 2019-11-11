@@ -2,6 +2,8 @@
 #include "tblgen/Basic/FileManager.h"
 #include "tblgen/Basic/FileUtils.h"
 
+#include <iostream>
+
 using std::string;
 
 namespace tblgen {
@@ -11,18 +13,18 @@ SourceID InvalidID = SourceID(-1);
 
 FileManager::FileManager() : sourceIdOffsets{1} {}
 
-OpenFile FileManager::openFile(const std::string &name, bool CreateSourceID)
+support::Optional<OpenFile>
+FileManager::openFile(const std::string &name, bool CreateSourceID)
 {
    auto it = MemBufferCache.find(name);
    if (it != MemBufferCache.end()) {
       auto &File = it->second;
-      return OpenFile(File.FileName, File.SourceId, File.BaseOffset,
-                      File.Buf.c_str());
+      return OpenFile(File.Buf, File.FileName, File.SourceId, File.BaseOffset);
    }
 
    std::ifstream ifs(name);
    if (ifs.fail()) {
-      return OpenFile();
+      return support::None;
    }
 
    SourceID id;
@@ -30,55 +32,28 @@ OpenFile FileManager::openFile(const std::string &name, bool CreateSourceID)
    std::string buf((std::istreambuf_iterator<char>(ifs)),
                    std::istreambuf_iterator<char>());
 
-   const char *ptr = buf.c_str();
-   std::unordered_map<std::string, CachedFile>::iterator *Entry;
+   std::unordered_map<std::string, CachedFile>::iterator Entry;
    if (CreateSourceID) {
       previous = sourceIdOffsets.back();
       id = (unsigned)sourceIdOffsets.size();
 
       auto offset = unsigned(previous + buf.size());
-      Entry
-          = MemBufferCache
-                .try_emplace(name, string(name), id, previous, move(buf)))
-                .first;
 
-      IdFileMap.try_emplace(id, &*Entry);
+      CachedFile file(string(name), id, previous, move(buf));
+      Entry  = MemBufferCache.emplace(name, std::move(file)).first;
+
+      IdFileMap.try_emplace(id, Entry);
       sourceIdOffsets.push_back(offset);
    }
    else {
       previous = 0;
       id = 0;
 
-      Entry = MemBufferCache
-                  .try_emplace(name, string(name), 0, 0, move(buf))
-                  .first;
+      CachedFile file(string(name), 0, 0, move(buf));
+      Entry = MemBufferCache.emplace(name, std::move(file)).first;
    }
 
-   return OpenFile(Entry->getValue().FileName, id, previous, ptr);
-}
-
-OpenFile FileManager::getBufferForString(std::string_view Str)
-{
-   auto Buf = llvm::MemoryBuffer::getMemBufferCopy(Str);
-   auto previous = sourceIdOffsets.back();
-   auto id = sourceIdOffsets.size();
-
-   auto ptr = Buf.get();
-   auto offset = unsigned(previous + ptr->getBufferSize());
-
-   std::string key = "__";
-   key += std::to_string(id);
-
-   auto Entry
-       = MemBufferCache
-             .try_emplace(key, "<mixin expression>", id, previous, move(Buf))
-             .first;
-   Entry->getValue().IsMixin = true;
-
-   IdFileMap.try_emplace(id, &*Entry);
-   sourceIdOffsets.push_back(offset);
-
-   return OpenFile(Entry->getValue().FileName, (unsigned)id, previous, ptr);
+   return OpenFile(Entry->second.Buf, Entry->second.FileName, id, previous);
 }
 
 OpenFile FileManager::getOpenedFile(SourceID sourceId)
@@ -86,16 +61,16 @@ OpenFile FileManager::getOpenedFile(SourceID sourceId)
    auto index = IdFileMap.find(sourceId);
    assert(index != IdFileMap.end());
 
-   auto &F = index->getSecond()->getValue();
-   return OpenFile(F.FileName, F.SourceId, F.BaseOffset, F.Buf.get());
+   auto &F = index->second->second;
+   return OpenFile(F.Buf, F.FileName, F.SourceId, F.BaseOffset);
 }
 
-llvm::MemoryBuffer *FileManager::getBuffer(SourceID sourceId)
+const std::string &FileManager::getBuffer(SourceID sourceId)
 {
    auto index = IdFileMap.find(sourceId);
    assert(index != IdFileMap.end());
 
-   return index->getSecond()->getValue().Buf.get();
+   return index->second->second.Buf;
 }
 
 unsigned FileManager::getSourceId(SourceLocation loc)
@@ -131,10 +106,9 @@ unsigned FileManager::getSourceId(SourceLocation loc)
 std::string_view FileManager::getFileName(SourceID sourceId)
 {
    auto index = IdFileMap.find(sourceId);
-   if (index->getSecond()->getValue().IsMixin)
-      return "<mixin expression>";
+   assert (index != IdFileMap.end() && "invalid source ID!");
 
-   return index->getSecond()->getKey();
+   return index->second->first;
 }
 
 LineColPair FileManager::getLineAndCol(SourceLocation loc)
@@ -147,7 +121,7 @@ LineColPair FileManager::getLineAndCol(SourceLocation loc)
 }
 
 LineColPair FileManager::getLineAndCol(SourceLocation loc,
-                                       llvm::MemoryBuffer *Buf)
+                                       const std::string &Buf)
 {
    auto ID = getSourceId(loc);
    auto it = LineOffsets.find(ID);
@@ -195,13 +169,13 @@ const std::vector<unsigned> &FileManager::getLineOffsets(SourceID sourceID)
 
 const std::vector<unsigned> &
 FileManager::collectLineOffsetsForFile(SourceID sourceId,
-                                       llvm::MemoryBuffer *Buf)
+                                       const std::string &Buf)
 {
    std::vector<unsigned> newLines{0};
 
    unsigned idx = 0;
-   auto buf = Buf->getBufferStart();
-   auto size = Buf->getBufferSize();
+   auto buf = Buf.c_str();
+   auto size = Buf.size();
 
    while (idx < size) {
       switch (*buf) {
@@ -243,9 +217,9 @@ void FileManager::dumpSourceRange(SourceRange SR)
    size_t ID = getSourceId(loc);
    auto File = getOpenedFile(ID);
 
-   llvm::MemoryBuffer *Buf = File.Buf;
-   size_t srcLen = Buf->getBufferSize();
-   const char *src = Buf->getBufferStart();
+   const std::string &Buf = File.Buf;
+   size_t srcLen = Buf.size();
+   const char *src = Buf.c_str();
 
    // show file name, line number and column
    auto lineAndCol = getLineAndCol(loc, Buf);
@@ -279,7 +253,7 @@ void FileManager::dumpSourceRange(SourceRange SR)
       Len = lineEndIndex - newlineIndex - 1;
    }
 
-   std::string_view ErrLine(Buf->getBufferStart() + newlineIndex + 1, Len);
+   std::string_view ErrLine(Buf.c_str() + newlineIndex + 1, Len);
 
    // show carets for any given single source location, and tildes for source
    // ranges (but only on the error line)

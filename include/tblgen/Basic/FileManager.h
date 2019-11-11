@@ -3,6 +3,7 @@
 #define TBLGEN_FILEMANAGER_H
 
 #include "tblgen/Lex/SourceLocation.h"
+#include "tblgen/Support/Optional.h"
 
 #include <fstream>
 #include <string>
@@ -23,33 +24,32 @@ using SourceOffset = unsigned;
 extern SourceID InvalidID;
 
 struct OpenFile {
-   OpenFile(std::string_view FileName = "",
+   OpenFile(const std::string &Buf,
+            std::string_view FileName = "",
             SourceID SourceId = 0,
-            unsigned int BaseOffset = 0,
-            const char *Buf = nullptr)
-      : FileName(FileName), SourceId(SourceId), BaseOffset(BaseOffset),
-        Buf(Buf)
+            unsigned int BaseOffset = 0)
+      : Buf(Buf), FileName(FileName), SourceId(SourceId), BaseOffset(BaseOffset)
    { }
 
+   const std::string &Buf;
    std::string_view FileName;
    SourceID SourceId;
    SourceOffset BaseOffset;
-   const char *Buf;
 };
 
 class FileManager {
 public:
    FileManager();
 
-   OpenFile openFile(std::string_view fileName, bool CreateSourceID = true);
-   OpenFile getBufferForString(std::string_view Str);
+   support::Optional<OpenFile> openFile(const std::string &fileName,
+                                        bool CreateSourceID = true);
 
    OpenFile getOpenedFile(SourceID sourceId);
    OpenFile getOpenedFile(SourceLocation loc)
    { return getOpenedFile(getSourceId(loc)); }
 
-   std::ifstream *getBuffer(SourceID sourceId);
-   std::ifstream *getBuffer(SourceLocation loc)
+   const std::string &getBuffer(SourceID sourceId);
+   const std::string &getBuffer(SourceLocation loc)
    { return getBuffer(getSourceId(loc)); }
 
    SourceOffset getBaseOffset(SourceID sourceId)
@@ -73,7 +73,7 @@ public:
    std::string_view getFileName(SourceID sourceId);
 
    LineColPair getLineAndCol(SourceLocation loc);
-   LineColPair getLineAndCol(SourceLocation loc, std::ifstream *Buf);
+   LineColPair getLineAndCol(SourceLocation loc, const std::string &Buf);
    const std::vector<SourceOffset> &getLineOffsets(SourceID sourceID);
 
    struct CachedFile {
@@ -110,8 +110,8 @@ private:
    std::unordered_map<SourceID, SourceLocation> aliases;
    std::unordered_map<SourceID, std::vector<SourceOffset>> LineOffsets;
 
-   const std::vector<SourceOffset> &collectLineOffsetsForFile(SourceID sourceId,
-                                                       std::ifstream *Buf);
+   const std::vector<SourceOffset> &collectLineOffsetsForFile(
+      SourceID sourceId, const std::string &Buf);
 
    std::unordered_map<SourceID, SourceLocation> Imports;
 };

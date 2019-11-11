@@ -1,24 +1,15 @@
-//
-// Created by Jonas Zell on 01.02.18.
-//
 
 #ifndef TABLEGEN_RECORD_H
 #define TABLEGEN_RECORD_H
 
 #include "tblgen/Lex/SourceLocation.h"
+#include "tblgen/Support/Allocator.h"
+#include "tblgen/Support/Optional.h"
 
-#include <llvm/ADT/MapVector.h>
-#include <llvm/ADT/StringMap.h>
-
+#include <unordered_map>
 #include <unordered_set>
+#include <string>
 #include <vector>
-
-namespace llvm {
-   template<class T>
-   class SmallVectorImpl;
-
-   class raw_ostream;
-} // namespace llvm
 
 namespace tblgen {
 
@@ -40,7 +31,7 @@ public:
         declLoc(declLoc), associatedTemplateParm(associatedTemplateParm)
    {}
 
-   std::string_view getName() const
+   const std::string &getName() const
    {
       return name;
    }
@@ -75,7 +66,7 @@ public:
    friend class Record;
 
 private:
-   std::string_view name;
+   std::string name;
    Type *type;
    Value *defaultValue;
    SourceLocation declLoc;
@@ -148,7 +139,7 @@ public:
       bases.emplace_back(Base, move(templateParams));
    }
 
-   std::string_view getName() const
+   const std::string &getName() const
    {
       return name;
    }
@@ -247,7 +238,7 @@ public:
    RecordKeeper &getRecordKeeper() const { return RK; }
 
    void dump();
-   void printTo(llvm::raw_ostream &out);
+   void printTo(std::ostream &out);
 
    friend class RecordKeeper;
 
@@ -258,7 +249,7 @@ private:
 
    RecordKeeper &RK;
 
-   std::string_view name;
+   std::string name;
    SourceLocation declLoc;
 
    std::vector<BaseClass> bases;
@@ -268,13 +259,13 @@ private:
    std::vector<RecordField> overrides;
 };
 
-inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Class &C)
+inline std::ostream &operator<<(std::ostream &str, Class &C)
 {
    C.printTo(str);
    return str;
 }
 
-inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Class *C)
+inline std::ostream &operator<<(std::ostream &str, Class *C)
 {
    str << *C;
    return str;
@@ -285,16 +276,16 @@ public:
    void addOwnField(SourceLocation loc, std::string_view key,
                     Type *Ty, Value *V) {
       auto &F = ownFields.emplace_back(key, Ty, V, loc);
-      auto &Entry = *fieldValues.try_emplace(key, V).first;
-      F.name = Entry.getKey();
+      auto &Entry = *fieldValues.emplace(key, V).first;
+      F.name = std::string_view(Entry.first);
    }
 
-   void setFieldValue(std::string_view key, Value *V)
+   void setFieldValue(const std::string &key, Value *V)
    {
       fieldValues[key] = V;
    }
 
-   const std::string_view &getName() const
+   const std::string &getName() const
    {
       return name;
    }
@@ -319,7 +310,7 @@ public:
       bases.emplace_back(Base, move(templateParams));
    }
 
-   bool hasField(std::string_view name) const
+   bool hasField(const std::string &name) const
    {
       auto it = fieldValues.find(name);
       return it != fieldValues.end();
@@ -335,11 +326,11 @@ public:
       return nullptr;
    }
 
-   Value *getFieldValue(std::string_view fieldName) const
+   Value *getFieldValue(const std::string &fieldName) const
    {
       auto it = fieldValues.find(fieldName);
       if (it != fieldValues.end())
-         return it->getValue();
+         return it->second;
 
       return nullptr;
    }
@@ -377,12 +368,12 @@ public:
    void dump();
    void dumpAllValues();
 
-   void printTo(llvm::raw_ostream &out);
+   void printTo(std::ostream &out);
 
    friend class RecordKeeper;
 
 private:
-   Record(RecordKeeper &RK, std::string_view name, SourceLocation declLoc)
+   Record(RecordKeeper &RK, const std::string &name, SourceLocation declLoc)
       : RK(RK), name(name), declLoc(declLoc)
    {
    }
@@ -394,7 +385,7 @@ private:
 
    RecordKeeper &RK;
 
-   std::string_view name;
+   std::string name;
    SourceLocation declLoc;
 
    std::vector<Class::BaseClass> bases;
@@ -405,34 +396,34 @@ private:
    bool IsAnonymous = false;
 };
 
-inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Record &R)
+inline std::ostream &operator<<(std::ostream &str, Record &R)
 {
    R.printTo(str);
    return str;
 }
 
-inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Record *R)
+inline std::ostream &operator<<(std::ostream &str, Record *R)
 {
    str << *R;
    return str;
 }
 
 struct EnumCase {
-   std::string_view caseName;
+   std::string caseName;
    uint64_t caseValue;
 };
 
 class Enum {
 public:
-   void addCase(std::string_view caseName, llvm::Optional<uint64_t> caseVal = llvm::None);
+   void addCase(std::string_view caseName, support::Optional<uint64_t> caseVal = support::None);
 
-   llvm::Optional<uint64_t> getCaseValue(std::string_view caseName) const;
-   llvm::Optional<std::string_view> getCaseName(uint64_t caseVal) const;
+   support::Optional<uint64_t> getCaseValue(const std::string &caseName) const;
+   support::Optional<std::string_view> getCaseName(uint64_t caseVal) const;
 
-   EnumCase *getCase(std::string_view caseName) const;
+   EnumCase *getCase(const std::string &caseName) const;
    EnumCase *getCase(uint64_t caseVal) const;
 
-   bool hasCase(std::string_view caseName) const
+   bool hasCase(const std::string &caseName) const
    {
       return casesByName.find(caseName) != casesByName.end();
    }
@@ -442,7 +433,7 @@ public:
       return casesByValue.find(caseVal) != casesByValue.end();
    }
 
-   const std::string_view &getName() const
+   std::string_view getName() const
    {
       return name;
    }
@@ -452,7 +443,7 @@ public:
       return declLoc;
    }
 
-   void printTo(llvm::raw_ostream &out);
+   void printTo(std::ostream &out);
 
    friend class RecordKeeper;
 
@@ -464,20 +455,20 @@ private:
 
    RecordKeeper &RK;
 
-   std::string_view name;
+   std::string name;
    SourceLocation declLoc;
 
    std::unordered_map<std::string, EnumCase*> casesByName;
    std::unordered_map<uint64_t, EnumCase*> casesByValue;
 };
 
-inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Enum &R)
+inline std::ostream &operator<<(std::ostream &str, Enum &R)
 {
    R.printTo(str);
    return str;
 }
 
-inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Enum *R)
+inline std::ostream &operator<<(std::ostream &str, Enum *R)
 {
    str << *R;
    return str;
@@ -486,35 +477,15 @@ inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Enum *R)
 class RecordKeeper {
 public:
    RecordKeeper(TableGen &TG,
-                std::string_view namespaceName = "",
+                const std::string &namespaceName = "",
                 SourceLocation loc = {},
                 RecordKeeper *Parent = nullptr)
       : TG(TG), namespaceName(namespaceName), declLoc(loc), Parent(Parent)
    {}
 
-   template<class KeyTy, class ValueTy>
-   struct MapVectorPair : std::pair<KeyTy, ValueTy> {
-      using parent = std::pair<KeyTy, ValueTy>;
-
-      MapVectorPair(parent &&p)
-         : parent(std::move(p))
-      {}
-
-      KeyTy &getKey() { return parent::first; }
-      KeyTy const& getKey() const { return parent::first; }
-
-      ValueTy &getValue() { return parent::second; }
-      ValueTy const& getValue() const { return parent::second; }
-   };
-
-   using MapVectorTy =
-      llvm::MapVector<std::string_view, Record*,
-                      std::unordered_map<std::string_view, unsigned>,
-                      std::vector<MapVectorPair<std::string_view, Record*>>>;
-
-   Record *CreateRecord(std::string_view name, SourceLocation loc);
-   Class *CreateClass(std::string_view name, SourceLocation loc);
-   Enum *CreateEnum(std::string_view name, SourceLocation loc);
+   Record *CreateRecord(const std::string &name, SourceLocation loc);
+   Class *CreateClass(const std::string &name, SourceLocation loc);
+   Enum *CreateEnum(const std::string &name, SourceLocation loc);
 
    [[nodiscard]]
    Record *CreateAnonymousRecord(SourceLocation loc);
@@ -540,30 +511,27 @@ public:
       SourceLocation loc;
    };
 
-   void addValue(std::string_view name,
+   void addValue(const std::string &name,
                  Value *V,
                  SourceLocation loc);
 
-   RecordKeeper *addNamespace(std::string_view name,
-                              SourceLocation loc) {
-      return &Namespaces.try_emplace(name, TG, name, loc, this)
-                        .first->getValue();
-   }
+   RecordKeeper *addNamespace(const std::string &name,
+                              SourceLocation loc);
 
-   Record *lookupRecord(std::string_view name) const
+   Record *lookupRecord(const std::string &name) const
    {
-      auto it = Records.find(name);
-      if (it == Records.end()) {
+      auto it = RecordsMap.find(name);
+      if (it == RecordsMap.end()) {
          if (Parent)
             return Parent->lookupRecord(name);
 
          return nullptr;
       }
 
-      return it->getValue();
+      return it->second;
    }
 
-   Class *lookupClass(std::string_view name) const
+   Class *lookupClass(const std::string &name) const
    {
       auto it = Classes.find(name);
       if (it == Classes.end()) {
@@ -573,20 +541,20 @@ public:
          return nullptr;
       }
 
-      return it->getValue();
+      return it->second;
    }
 
-   Enum *lookupEnum(std::string_view name) const
+   Enum *lookupEnum(const std::string &name) const
    {
       auto it = Enums.find(name);
       if (it == Enums.end()) {
          return nullptr;
       }
 
-      return it->getValue();
+      return it->second;
    }
 
-   ValueDecl *lookupValueDecl(std::string_view name) const
+   ValueDecl *lookupValueDecl(const std::string &name) const
    {
       auto it = Values.find(name);
       if (it == Values.end()) {
@@ -596,10 +564,10 @@ public:
          return nullptr;
       }
 
-      return const_cast<ValueDecl*>(&it->getValue());
+      return const_cast<ValueDecl*>(&it->second);
    }
 
-   RecordKeeper *lookupNamespace(std::string_view name) const
+   RecordKeeper *lookupNamespace(const std::string & name) const
    {
       auto it = Namespaces.find(name);
       if (it == Namespaces.end()) {
@@ -609,10 +577,10 @@ public:
          return nullptr;
       }
 
-      return const_cast<RecordKeeper*>(&it->getValue());
+      return const_cast<RecordKeeper*>(it->second);
    }
 
-   SourceLocation lookupAnyDecl(std::string_view name) const
+   SourceLocation lookupAnyDecl(const std::string & name) const
    {
       if (auto R = lookupRecord(name))
          return R->getDeclLoc();
@@ -637,7 +605,7 @@ public:
       return Classes;
    }
 
-   const MapVectorTy &getAllRecords() const
+   const std::vector<Record*> &getAllRecords() const
    {
       return Records;
    }
@@ -647,12 +615,12 @@ public:
       return Values;
    }
 
-   const std::unordered_map<std::string, RecordKeeper> &getAllNamespaces() const
+   const std::unordered_map<std::string, RecordKeeper*> &getAllNamespaces() const
    {
       return Namespaces;
    }
 
-   const std::string_view &getNamespaceName() const
+   std::string_view getNamespaceName() const
    {
       return namespaceName;
    }
@@ -670,41 +638,42 @@ public:
    void getAllDefinitionsOf(Class *C,
                             std::vector<Record*> &vec) const {
       for (auto &R : Records)
-         if (R.getValue()->inheritsFrom(C))
-            vec.push_back(R.getValue());
+         if (R->inheritsFrom(C))
+            vec.push_back(R);
    }
 
-   void getAllDefinitionsOf(std::string_view className,
+   void getAllDefinitionsOf(const std::string &className,
                             std::vector<Record*> &vec) const {
       return getAllDefinitionsOf(lookupClass(className), vec);
    }
 
-   llvm::BumpPtrAllocator &getAllocator() const;
+   support::ArenaAllocator &getAllocator() const;
 
    void dump();
-   void printTo(llvm::raw_ostream &out);
+   void printTo(std::ostream &out);
 
 private:
    TableGen &TG;
 
-   std::string_view namespaceName;
+   std::string namespaceName;
    SourceLocation declLoc;
    RecordKeeper *Parent;
 
    std::unordered_map<std::string, Class*> Classes;
-   MapVectorTy Records;
+   std::vector<Record*> Records;
+   std::unordered_map<std::string, Record*> RecordsMap;
    std::unordered_map<std::string, Enum*> Enums;
    std::unordered_map<std::string, ValueDecl> Values;
-   std::unordered_map<std::string, RecordKeeper> Namespaces;
+   std::unordered_map<std::string, RecordKeeper*> Namespaces;
 };
 
-inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, RecordKeeper &RK)
+inline std::ostream &operator<<(std::ostream &str, RecordKeeper &RK)
 {
    RK.printTo(str);
    return str;
 }
 
-inline llvm::raw_ostream &operator<<(llvm::raw_ostream &str, RecordKeeper *RK)
+inline std::ostream &operator<<(std::ostream &str, RecordKeeper *RK)
 {
    str << *RK;
    return str;

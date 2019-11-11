@@ -1,16 +1,11 @@
-//
-// Created by Jonas Zell on 01.02.18.
-//
 
 #ifndef TABLEGEN_PARSER_H
 #define TABLEGEN_PARSER_H
 
-#include "tblgen/Lex/Lexer.h"
 #include "tblgen/Basic/IdentifierInfo.h"
+#include "tblgen/Lex/Lexer.h"
 #include "tblgen/Message/DiagnosticsEngine.h"
 #include "tblgen/TableGen.h"
-
-#include <llvm/Support/Allocator.h>
 
 namespace tblgen {
 
@@ -25,7 +20,7 @@ class Type;
 class Parser {
 public:
    Parser(TableGen &TG,
-          llvm::MemoryBuffer &Buf,
+          const std::string &Buf,
           unsigned sourceId);
 
    ~Parser();
@@ -48,7 +43,7 @@ private:
    lex::Lexer::LookaheadRAII *LR = nullptr;
    std::unordered_map<std::string, Value*> ForEachVals;
 
-   LLVM_ATTRIBUTE_NORETURN
+   [[noreturn]]
    void abortBP();
 
    void parseNextDecl();
@@ -82,7 +77,7 @@ private:
    void parsePrint();
    void parseNamespace();
 
-   std::string_view tryParseIdentifier();
+   std::string tryParseIdentifier();
 
    Type *parseType();
    Value *parseExpr(Type *contextualTy = nullptr);
@@ -113,24 +108,24 @@ private:
       ForEachScope(Parser &P, std::string_view name, Value *V)
          : P(P), name(name)
       {
-         P.ForEachVals.try_emplace(name, V);
+         P.ForEachVals.emplace(name, V);
       }
 
       ~ForEachScope()
       {
-         P.ForEachVals.erase(name);
+         P.ForEachVals.erase(P.ForEachVals.find(name));
       }
 
    private:
       Parser &P;
-      std::string_view name;
+      std::string name;
    };
 
-   Value *getForEachVal(std::string_view name)
+   Value *getForEachVal(const std::string &name)
    {
       auto it = ForEachVals.find(name);
       if (it != ForEachVals.end())
-         return it->getValue();
+         return it->second;
 
       return nullptr;
    }

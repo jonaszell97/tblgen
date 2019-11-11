@@ -1,16 +1,12 @@
-//
-// Created by Jonas Zell on 30.01.18.
-//
 
 #ifndef TBLGEN_IDENTIFIERINFO_H
 #define TBLGEN_IDENTIFIERINFO_H
 
 #include "tblgen/Lex/TokenKinds.h"
+#include "tblgen/Support/Allocator.h"
 
-#include <llvm/ADT/ArrayRef.h>
-#include <llvm/ADT/DenseMapInfo.h>
-#include <llvm/ADT/StringMap.h>
-#include <llvm/Support/Allocator.h>
+#include <string>
+#include <unordered_map>
 
 namespace tblgen {
 
@@ -28,7 +24,7 @@ class IdentifierInfo {
 public:
    friend class IdentifierTable;
 
-   std::string_view getIdentifier() const
+   const std::string &getIdentifier() const
    {
       return Ident;
    }
@@ -60,33 +56,21 @@ private:
       : keywordTokenKind(lex::tok::sentinel)
    {}
 
-   std::string_view Ident;
+   std::string Ident;
    lex::tok::TokenType keywordTokenKind;
 };
 
 class IdentifierTable {
 public:
-   using AllocatorTy = llvm::BumpPtrAllocator;
-   using MapTy       = std::unordered_map<std::string, IdentifierInfo*, AllocatorTy>;
+   using AllocatorTy = support::ArenaAllocator;
+   using MapTy       = std::unordered_map<std::string_view, IdentifierInfo*>;
 
-   IdentifierTable(unsigned initialSize = 8192)
-      : IdentMap(initialSize)
+   explicit IdentifierTable(support::ArenaAllocator &Allocator,
+                            unsigned initialSize = 8192)
+      : Allocator(Allocator), IdentMap(initialSize)
    {}
 
-   IdentifierInfo &get(std::string_view key)
-   {
-      auto &Entry = *IdentMap.insert(std::make_pair(key, nullptr)).first;
-
-      IdentifierInfo *&Info = Entry.second;
-      if (Info) return *Info;
-
-      auto *Mem = getAllocator().Allocate<IdentifierInfo>();
-      Info = new (Mem) IdentifierInfo;
-
-      Info->Ident = Entry.getKey();
-
-      return *Info;
-   }
+   IdentifierInfo &get(std::string_view key);
 
    IdentifierInfo &get(std::string_view key, lex::tok::TokenType kind)
    {
@@ -96,26 +80,18 @@ public:
       return Info;
    }
 
-   AllocatorTy &getAllocator()
-   {
-      return IdentMap.getAllocator();
-   }
-
    using iterator = MapTy::const_iterator;
    using const_iterator = MapTy::const_iterator;
 
-   iterator begin() const { return IdentMap.begin(); }
-   iterator end()   const { return IdentMap.end(); }
-   unsigned size()  const { return IdentMap.size(); }
+   [[nodiscard]] iterator begin() const { return IdentMap.begin(); }
+   [[nodiscard]] iterator end()   const { return IdentMap.end(); }
+   [[nodiscard]] unsigned size()  const { return IdentMap.size(); }
 
-   void addKeywords();
    void addTblGenKeywords();
-   void addModuleKeywords();
-   void addILKeywords();
 
 private:
+   support::ArenaAllocator &Allocator;
    MapTy IdentMap;
-   bool KeywordsAdded = false;
 
    void addKeyword(lex::tok::TokenType kind, std::string_view kw);
 };

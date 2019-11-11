@@ -6,7 +6,7 @@
 #include "tblgen/Support/Casting.h"
 #include "tblgen/Value.h"
 
-#include <iostream>
+#include <ostream>
 
 using namespace tblgen::diag;
 using namespace tblgen::support;
@@ -60,7 +60,7 @@ static bool isAbstract(Record *R)
    if (!F || !isa<IntegerLiteral>(F))
       return false;
 
-   return cast<IntegerLiteral>(F)->getVal().getBoolValue();
+   return cast<IntegerLiteral>(F)->getVal() != 0;
 }
 
 void EmitClassHierarchy(std::ostream &out, RecordKeeper const &RK)
@@ -123,7 +123,7 @@ void EmitClassHierarchy(std::ostream &out, RecordKeeper const &RK)
 
    if (auto cutoff = options->getFieldValue("NameCutoff")) {
       if (auto I = dyn_cast<IntegerLiteral>(cutoff))
-         nameCutoff = unsigned(I->getVal().getZExtValue());
+         nameCutoff = unsigned(I->getVal());
    }
 
    struct Decl {

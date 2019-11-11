@@ -37,7 +37,7 @@ static void printRecord(std::ostream &out, Record &R)
    out << "\n";
 
    for (auto &valPair : R.getFieldValues()) {
-      out << "   " << valPair.getKey() << " = " << valPair.getValue() << "\n";
+      out << "   " << valPair.first << " = " << valPair.second << "\n";
    }
 
    out << "}";
@@ -48,15 +48,15 @@ void PrintRecords(std::ostream &str, RecordKeeper const& RK)
    size_t i = 0;
    for (auto &R : RK.getAllRecords()) {
       if (i++ != 0) str << "\n\n";
-      printRecord(str, *R.second);
+      printRecord(str, *R);
    }
 
    for (auto &NS : RK.getAllNamespaces()) {
-      str << "\n\nnamespace " << NS.getValue().getNamespaceName() << " {\n\n";
+      str << "\n\nnamespace " << NS.second->getNamespaceName() << " {\n\n";
 
-      PrintRecords(str, NS.getValue());
+      PrintRecords(str, *NS.second);
 
-      str << "\n\n} // end namespace " << NS.getValue().getNamespaceName();
+      str << "\n\n} // end namespace " << NS.second->getNamespaceName();
    }
 }
 

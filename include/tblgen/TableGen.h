@@ -1,6 +1,3 @@
-//
-// Created by Jonas Zell on 01.02.18.
-//
 
 #ifndef TBLGEN_TABLEGEN_H
 #define TBLGEN_TABLEGEN_H
@@ -29,8 +26,10 @@ using TableGenBackend = void(std::ostream&, RecordKeeper&);
 
 class TableGen {
 public:
-   TableGen(fs::FileManager &fileMgr, DiagnosticsEngine &Diags)
-      : fileMgr(fileMgr), Diags(Diags), Idents(1024),
+   TableGen(support::ArenaAllocator &Allocator, fs::FileManager &fileMgr,
+            DiagnosticsEngine &Diags)
+      : Allocator(Allocator), fileMgr(fileMgr), Diags(Diags),
+        Idents(Allocator, 1024),
         Int1Ty(1, false),
         Int8Ty(8, false),   UInt8Ty(8, true),
         Int16Ty(16, false), UInt16Ty(16, true),
@@ -51,7 +50,7 @@ public:
 
    void Deallocate(void *Ptr) const {}
 
-   support::BumpPtrAllocator &getAllocator() const
+   support::ArenaAllocator &getAllocator() const
    {
       return Allocator;
    }
@@ -75,12 +74,12 @@ public:
 
    FinalizeResult finalizeRecord(Record &R);
 
+   support::ArenaAllocator &Allocator;
    fs::FileManager &fileMgr;
    DiagnosticsEngine &Diags;
 
 private:
    mutable IdentifierTable Idents;
-   mutable support::BumpPtrAllocator Allocator;
 
    mutable IntType Int1Ty;
    mutable IntType Int8Ty;
@@ -123,22 +122,22 @@ public:
    {
       if (!isUnsigned) {
          switch (bits) {
-            case 1: return &Int1Ty;
-            case 8: return &Int8Ty;
-            case 16: return &Int16Ty;
-            case 32: return &Int32Ty;
-            case 64: return &Int64Ty;
-            default: unreachable("bad bitwidth");
+         case 1: return &Int1Ty;
+         case 8: return &Int8Ty;
+         case 16: return &Int16Ty;
+         case 32: return &Int32Ty;
+         case 64: return &Int64Ty;
+         default: unreachable("bad bitwidth");
          }
       }
       else {
          switch (bits) {
-            case 1: return &Int1Ty;
-            case 8: return &UInt8Ty;
-            case 16: return &UInt16Ty;
-            case 32: return &UInt32Ty;
-            case 64: return &UInt64Ty;
-            default: unreachable("bad bitwidth");
+         case 1: return &Int1Ty;
+         case 8: return &UInt8Ty;
+         case 16: return &UInt16Ty;
+         case 32: return &UInt32Ty;
+         case 64: return &UInt64Ty;
+         default: unreachable("bad bitwidth");
          }
       }
    }

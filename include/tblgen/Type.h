@@ -1,15 +1,9 @@
-//
-// Created by Jonas Zell on 01.02.18.
-//
 
 #ifndef TBLGEN_TYPE_H
 #define TBLGEN_TYPE_H
 
+#include <iosfwd>
 #include <string>
-
-namespace llvm {
-   class raw_ostream;
-} // namespace llvm
 
 namespace tblgen {
 
@@ -203,7 +197,7 @@ private:
    Enum *E;
 };
 
-llvm::raw_ostream &operator<<(llvm::raw_ostream &str, Type const* Ty);
+std::ostream &operator<<(std::ostream &str, Type const* Ty);
 
 } // namespace tblgen
 

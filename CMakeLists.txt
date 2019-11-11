@@ -5,7 +5,7 @@ project(TableGen)
 set(CMAKE_CXX_STANDARD 17)
 
 # set CXX flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic -fno-exceptions -fno-rtti")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -fno-exceptions -fno-rtti")
 
 # add include directories
 include_directories("include")
@@ -28,7 +28,13 @@ set(SOURCE_FILES include/tblgen/Parser.h
         src/Support/LiteralParser.cpp include/tblgen/Support/LiteralParser.h
         src/Message/DiagnosticsEngine.cpp include/tblgen/Message/DiagnosticsEngine.h
         include/tblgen/Support/StringSwitch.h src/Support/DynamicLibrary.cpp include/tblgen/Support/DynamicLibrary.h
-        include/tblgen/Support/Allocator.h)
+        include/tblgen/Support/Allocator.h include/tblgen/Support/Optional.h)
 
 add_executable(tblgen main.cpp ${SOURCE_FILES})
+add_executable(tblgen-asan main.cpp ${SOURCE_FILES})
 
+target_link_libraries(tblgen-asan /usr/local/Cellar/gcc/9.2.0_1/lib/gcc/9/libasan.5.dylib)
+target_compile_options(tblgen-asan
+        PUBLIC "-fsanitize=address"
+        PUBLIC "-fno-omit-frame-pointer"
+        PUBLIC "-O1")

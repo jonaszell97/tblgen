@@ -1,19 +1,14 @@
-//
-// Created by Jonas Zell on 13.02.18.
-//
 
 #include "tblgen/Support/LiteralParser.h"
 
+#include "tblgen/TableGen.h"
 #include "tblgen/Support/Format.h"
 
 using namespace tblgen;
 
 LiteralParser::FPResult LiteralParser::parseFloating()
 {
-   llvm::APFloat APF(0.0);
-   auto status = APF.convertFromString(Str, llvm::APFloat::rmNearestTiesToEven);
-
-   return FPResult{ std::move(APF), status };
+   return FPResult{ std::stod(std::string(Str)) };
 }
 
 uint8_t LiteralParser::getIntegerRadix()
@@ -25,20 +20,18 @@ uint8_t LiteralParser::getIntegerRadix()
       return 8;
 
    switch (Str[1]) {
-      case 'x':
-      case 'X':
-         Str = Str.drop_front(2);
-         return 16;
-      case 'b':
-      case 'B':
-         Str = Str.drop_front(2);
-         return 2;
-      default:
-         break;
+   case 'x':
+   case 'X':
+      Str.remove_prefix(2);
+      return 16;
+   case 'b':
+   case 'B':
+      Str.remove_prefix(2);
+      return 2;
+   default:
+      Str.remove_prefix(1);
+      return 8;
    }
-
-   Str = Str.drop_front(1);
-   return 8;
 }
 
 static uint8_t getDigitValue(char c, uint8_t radix)
@@ -63,18 +56,17 @@ static uint8_t getDigitValue(char c, uint8_t radix)
 
 LiteralParser::IntResult LiteralParser::parseInteger(unsigned int bitwidth,
                                                      bool isSigned) {
-   llvm::APInt API(bitwidth, 0);
-
+   uint64_t result = 0;
    uint8_t radix = getIntegerRadix();
    size_t len = Str.size();
 
    assert(len && "empty literal string!");
    if (len == 1) {
-      API += static_cast<uint64_t>(getDigitValue(Str.front(), radix));
-      return IntResult{ llvm::APSInt(std::move(API), !isSigned), false };
+      result += static_cast<uint64_t>(getDigitValue(Str.front(), radix));
+      return IntResult{ result, false };
    }
 
-   unsigned shift;
+   unsigned shift = 0;
    switch (radix) {
    case 2:
       shift = 1;
@@ -101,17 +93,17 @@ LiteralParser::IntResult LiteralParser::parseInteger(unsigned int bitwidth,
       }
 
       uint8_t Val = getDigitValue(*Ptr, radix);
-      if (shift) {
-         API <<= shift;
+      if (shift > 0) {
+         result <<= shift;
       }
       else {
-         API *= radix;
+         result *= radix;
       }
 
-      API += Val;
+      result += Val;
    }
 
-   return IntResult{ llvm::APSInt(std::move(API), !isSigned), false };
+   return IntResult{ result, false };
 }
 
 LiteralParser::CharResult LiteralParser::parseCharacter()

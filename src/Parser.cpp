@@ -1,6 +1,3 @@
-//
-// Created by Jonas Zell on 01.02.18.
-//
 
 #include "tblgen/Parser.h"
 
@@ -14,18 +11,21 @@
 #include "tblgen/Support/SaveAndRestore.h"
 #include "tblgen/Support/StringSwitch.h"
 
-#include <llvm/ADT/SmallString.h>
+#include <iostream>
+#include <sstream>
 
 using namespace tblgen::lex;
 using namespace tblgen::diag;
 using namespace tblgen::support;
 
+using std::string;
+
 namespace tblgen {
 
 Parser::Parser(TableGen &TG,
-               llvm::MemoryBuffer &Buf,
+               const std::string &Buf,
                unsigned sourceId)
-   : TG(TG), lex(TG.getIdents(), TG.Diags, &Buf, sourceId, 1, '\0'),
+   : TG(TG), lex(TG.getIdents(), TG.Diags, Buf, sourceId, 1, '\0'),
      GlobalRK(std::make_unique<RecordKeeper>(TG)),
      RK(GlobalRK.get())
 {
@@ -145,8 +145,8 @@ void Parser::parseClass()
 
       if (!newDecl) {
          TG.Diags.Diag(err_generic_error)
-            << "duplicate declaration of field " + P.getName() + " for class "
-               + C->getName()
+            << std::string("duplicate declaration of field ")
+               + string(P.getName()) + " for class " + string(C->getName())
             << P.getDeclLoc();
 
          TG.Diags.Diag(note_generic_note)
@@ -221,7 +221,7 @@ void Parser::parseTemplateParams(Class *C,
       if (!newDecl) {
          TG.Diags.Diag(err_generic_error)
             << "duplicate declaration of parameter " + name + " for class "
-               + C->getName()
+               + string(C->getName())
             << loc;
 
          TG.Diags.Diag(err_generic_error)
@@ -470,14 +470,14 @@ void Parser::validateTemplateArgs(Class &Base,
       break;
    case TP_IncompatibleType: {
       size_t idx = checkResult.incompatibleIndex;
-      llvm::SmallString<128> str;
+      string str;
 
       str += Base.getParameters()[idx].getType()->toString();
       str += " and ";
       str += templateArgs[idx]->getType()->toString();
 
       TG.Diags.Diag(err_generic_error)
-         << "incompatible types " + str.str()
+         << "incompatible types " + str
          << locs[checkResult.incompatibleIndex];
 
       break;
@@ -638,10 +638,10 @@ void Parser::parseFieldDef(Record *R)
    R->addOwnField(loc, name, FTy, value);
 }
 
-std::string_view Parser::tryParseIdentifier()
+std::string Parser::tryParseIdentifier()
 {
    if (currentTok().is(tok::ident))
-      return currentTok().getIdentifier();
+      return std::string(currentTok().getIdentifier());
 
    if (currentTok().is(tok::dollar)) {
       if (peek().is(tok::open_paren)) {
@@ -753,7 +753,7 @@ void Parser::parseEnumCase(Enum *E)
       return E->addCase(ident);
    }
 
-   uint64_t caseVal = cast<IntegerLiteral>(expr)->getVal().getZExtValue();
+   uint64_t caseVal = cast<IntegerLiteral>(expr)->getVal();
    if (E->hasCase(caseVal)) {
       TG.Diags.Diag(err_generic_error)
          << "duplicate case value " << cast<IntegerLiteral>(expr)->getVal()
@@ -814,14 +814,11 @@ void Parser::parsePrint()
    auto loc = currentTok().getSourceLoc();
    auto E = parseExpr();
 
-   llvm::SmallString<128> s;
-   {
-      llvm::raw_svector_ostream ss(s);
-      ss << E;
-   }
+   std::ostringstream OS;
+   OS << E;
 
    TG.Diags.Diag(err_generic_error)
-      << s.str()
+      << OS.str()
       << loc;
 }
 
@@ -839,11 +836,11 @@ void Parser::parseInclude()
    }
 
    auto file = cast<StringLiteral>(fileName)->getVal();
-   std::string path = fs::getPath(TG.fileMgr.getFileName(lex.getSourceId()));
-   auto realFile = fs::findFileInDirectories(file, path);
+   string path(fs::getPath(TG.fileMgr.getFileName(lex.getSourceId())));
+   auto realFile = fs::findFileInDirectories(file, std::vector<string>{path});
 
-   auto buf = TG.fileMgr.openFile(realFile);
-   if (!buf.Buf) {
+   auto optBuf = TG.fileMgr.openFile(realFile);
+   if (!optBuf) {
       TG.Diags.Diag(err_generic_error)
          << "file '" + file + "' not found"
          << currentTok().getSourceLoc();
@@ -851,7 +848,8 @@ void Parser::parseInclude()
       abortBP();
    }
 
-   Parser parser(TG, *buf.Buf, buf.SourceId);
+   auto &buf = optBuf.getValue();
+   Parser parser(TG, buf.Buf, buf.SourceId);
    if (!parser.parse()) {
       abortBP();
    }
@@ -874,7 +872,7 @@ void Parser::parseIf(Class *C, Record *R)
    expect(tok::open_brace);
    advance();
 
-   if (!cast<IntegerLiteral>(Cond)->getVal().getBoolValue()) {
+   if (cast<IntegerLiteral>(Cond)->getVal() != 0) {
       unsigned Open = 1;
       unsigned Close = 0;
 
@@ -959,7 +957,7 @@ void Parser::parseForEach(Class *C, Record *R)
          Lexer::LookaheadRAII LR(lex);
          auto SAR = support::saveAndRestore(this->LR, &LR);
 
-         ForEachScope scope(*this, name, V.getValue());
+         ForEachScope scope(*this, name, V.second);
 
          while (!currentTok().is(tok::close_brace)) {
             if (R) {
@@ -1024,6 +1022,9 @@ Type* Parser::parseType()
    if ((ident.size() == 2 || ident.size() == 3)
        && (ident[0] == 'i' || ident[0] == 'u')) {
       auto isUnsigned = ident[0] == 'u';
+      std::string_view suffix = ident;
+      suffix.remove_prefix(1);
+
       auto bw = StringSwitch<unsigned>(ident.substr(1))
          .Case("1", 1).Case("8", 8).Case("16", 16).Case("32", 32)
          .Case("64", 64).Default(0);
@@ -1124,12 +1125,12 @@ Value* Parser::parseExpr(Type *contextualTy)
       auto Res = LParser.parseInteger(bitwidth, isSigned);
       assert(!Res.wasTruncated && "value too large for type");
 
-      auto APSInt = std::move(Res.APS);
+      auto APSInt = Res.APS;
       if (isNegated) {
-         APSInt.negate();
+         APSInt = -APSInt;
       }
 
-      return new(TG) IntegerLiteral(contextualTy, std::move(APSInt));
+      return new(TG) IntegerLiteral(contextualTy, APSInt);
    }
 
    if (currentTok().is(tok::fpliteral)) {
@@ -1142,10 +1143,10 @@ Value* Parser::parseExpr(Type *contextualTy)
       }
 
       if (isNegated) {
-         APFloat.changeSign();
+         APFloat = -APFloat;
       }
 
-      return new(TG) FPLiteral(contextualTy, std::move(APFloat));
+      return new(TG) FPLiteral(contextualTy, APFloat);
    }
 
    if (isNegated) {
@@ -1161,13 +1162,11 @@ Value* Parser::parseExpr(Type *contextualTy)
    }
 
    if (currentTok().oneOf(tok::kw_true, tok::kw_false)) {
-      llvm::APInt APInt(1, (uint64_t)currentTok().is(tok::kw_true));
-      return new(TG) IntegerLiteral(TG.getInt1Ty(), std::move(APInt));
+      return new(TG) IntegerLiteral(TG.getInt1Ty(), (uint64_t)currentTok().is(tok::kw_true));
    }
 
    if (currentTok().is(tok::charliteral)) {
-      llvm::APSInt APSInt(8, currentTok().getText().front());
-      return new(TG) IntegerLiteral(TG.getInt8Ty(), std::move(APSInt));
+      return new(TG) IntegerLiteral(TG.getInt8Ty(), (uint64_t)currentTok().getText().front());
    }
 
    if (currentTok().is(tok::exclaim)) {
@@ -1228,38 +1227,38 @@ Value* Parser::parseExpr(Type *contextualTy)
 
       unsigned openedBraces = 1;
       unsigned closedBraces = 0;
-      llvm::SmallString<512> str;
+      string str;
 
       while (openedBraces != closedBraces) {
          switch (currentTok().getKind()) {
-            case tok::open_brace:
-               ++openedBraces;
-               break;
-            case tok::close_brace:
-               ++closedBraces;
-               if (openedBraces == closedBraces)
-                  continue;
+         case tok::open_brace:
+            ++openedBraces;
+            break;
+         case tok::close_brace:
+            ++closedBraces;
+            if (openedBraces == closedBraces)
+               continue;
 
-               break;
-            case tok::eof:
-               TG.Diags.Diag(err_generic_error)
-                  << "unexpected end of file, expecting '}'"
-                  << currentTok().getSourceLoc();
+            break;
+         case tok::eof:
+            TG.Diags.Diag(err_generic_error)
+               << "unexpected end of file, expecting '}'"
+               << currentTok().getSourceLoc();
 
-               abortBP();
-            default:
-               break;
+            abortBP();
+         default:
+            break;
          }
 
-         currentTok().rawRepr(str);
+         str = currentTok().rawRepr();
          advance(false, false);
       }
 
-      return new(TG) CodeBlock(TG.getCodeTy(), str.str());
+      return new(TG) CodeBlock(TG.getCodeTy(), move(str));
    }
 
    if (currentTok().is(tok::ident)) {
-      auto ident =  currentTok().getIdentifierInfo()->getIdentifier();
+      string ident(currentTok().getIdentifierInfo()->getIdentifier());
 
       Value *Val;
       if (auto R = RK->lookupRecord(ident)) {
@@ -1267,7 +1266,7 @@ Value* Parser::parseExpr(Type *contextualTy)
             advance();
             expect(tok::ident);
 
-            auto field = currentTok().getIdentifierInfo()->getIdentifier();
+            string field(currentTok().getIdentifierInfo()->getIdentifier());
             auto F = R->getFieldValue(field);
 
             if (!F) {
@@ -1337,7 +1336,6 @@ Value* Parser::parseExpr(Type *contextualTy)
          Val = V->getVal();
       }
       else {
-
          Type *Ty = nullptr;
          if (currentClass) {
             auto F = currentClass->getTemplateParameter(ident);
@@ -1371,7 +1369,7 @@ Value* Parser::parseExpr(Type *contextualTy)
 
          expect(tok::close_square);
 
-         std::string_view Key = cast<StringLiteral>(KeyVal)->getVal();
+         const string &Key = cast<StringLiteral>(KeyVal)->getVal();
          if (auto *DL = dyn_cast<DictLiteral>(Val)) {
             auto *AccessedVal = DL->getValue(Key);
             if (!AccessedVal) {
@@ -1730,8 +1728,8 @@ Value* Parser::parseFunction(Type *contextualTy)
                == cast<IntegerLiteral>(RHS)->getVal();
             break;
          case Value::FPLiteralID:
-            Result = cast<FPLiteral>(LHS)->getVal().compare(
-               cast<FPLiteral>(RHS)->getVal()) == llvm::APFloat::cmpEqual;
+            Result = cast<FPLiteral>(LHS)->getVal() ==
+               cast<FPLiteral>(RHS)->getVal();
             break;
          case Value::StringLiteralID:
             Result = cast<StringLiteral>(LHS)->getVal()
@@ -1750,7 +1748,7 @@ Value* Parser::parseFunction(Type *contextualTy)
          Result = !Result;
       }
 
-      return new(TG) IntegerLiteral(TG.getInt1Ty(), llvm::APInt(1, Result));
+      return new(TG) IntegerLiteral(TG.getInt1Ty(), (uint64_t)1);
    }
    }
 

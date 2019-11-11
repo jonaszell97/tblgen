@@ -1,6 +1,3 @@
-//
-// Created by Jonas Zell on 25.08.18.
-//
 
 #ifndef TBLGEN_CONFIG_H
 #define TBLGEN_CONFIG_H

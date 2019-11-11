@@ -1,10 +1,5 @@
-//
-// Created by Jonas Zell on 18.11.17.
-//
 
 #include "tblgen/Support/Format.h"
-
-#include <llvm/Support/raw_ostream.h>
 
 namespace tblgen {
 namespace support {
