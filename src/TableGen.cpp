@@ -9,6 +9,18 @@ using namespace tblgen::support;
 
 namespace tblgen {
 
+TableGen::TableGen(support::ArenaAllocator &Allocator, fs::FileManager &fileMgr,
+                   DiagnosticsEngine &Diags)
+   : Allocator(Allocator), fileMgr(fileMgr), Diags(Diags),
+     GlobalRK(std::make_unique<RecordKeeper>(*this)),
+     Idents(Allocator, 1024),
+     Int1Ty(1, false),
+     Int8Ty(8, false),   UInt8Ty(8, true),
+     Int16Ty(16, false), UInt16Ty(16, true),
+     Int32Ty(32, false), UInt32Ty(32, true),
+     Int64Ty(64, false), UInt64Ty(64, true)
+{}
+
 static Value *resolveValue(Value *V,
                            Class::BaseClass const &PreviousBase,
                            const std::vector<Value *> &ConcreteTemplateArgs,
@@ -147,6 +159,10 @@ TableGen::FinalizeResult TableGen::finalizeRecord(Record &R)
          };
       }
    }
+
+   auto name = R.hasField("name") ? "__name" : "name";
+   R.addOwnField(SourceLocation(), name, getStringTy(),
+      new (*this) StringLiteral(getStringTy(), R.getName()));
 
    return { RFS_Success };
 }

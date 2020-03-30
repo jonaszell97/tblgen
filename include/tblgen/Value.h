@@ -198,7 +198,7 @@ public:
    { return V->getTypeID() == IdentifierValID;}
 
 private:
-   std::string_view Val;
+   std::string Val;
 };
 
 class RecordVal: public Value {

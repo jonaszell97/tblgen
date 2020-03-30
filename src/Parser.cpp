@@ -24,10 +24,21 @@ namespace tblgen {
 
 Parser::Parser(TableGen &TG,
                const std::string &Buf,
-               unsigned sourceId)
-   : TG(TG), lex(TG.getIdents(), TG.Diags, Buf, sourceId, 1, '\0'),
-     GlobalRK(std::make_unique<RecordKeeper>(TG)),
-     RK(GlobalRK.get())
+               unsigned sourceId,
+               unsigned baseOffset)
+   : TG(TG), lex(TG.getIdents(), TG.Diags, Buf, sourceId,
+                 baseOffset, '\0'),
+     RK(TG.GlobalRK.get())
+{
+   TG.getIdents().addTblGenKeywords();
+}
+
+Parser::Parser(TableGen &TG,
+               const std::vector<Token> &Toks,
+               unsigned sourceId,
+               unsigned baseOffset)
+   : TG(TG), lex(TG.getIdents(), TG.Diags, Toks, sourceId, baseOffset),
+     RK(TG.GlobalRK.get())
 {
    TG.getIdents().addTblGenKeywords();
 }
@@ -849,7 +860,7 @@ void Parser::parseInclude()
    }
 
    auto &buf = optBuf.getValue();
-   Parser parser(TG, buf.Buf, buf.SourceId);
+   Parser parser(TG, buf.Buf, buf.SourceId, buf.BaseOffset);
    if (!parser.parse()) {
       abortBP();
    }
@@ -872,7 +883,7 @@ void Parser::parseIf(Class *C, Record *R)
    expect(tok::open_brace);
    advance();
 
-   if (cast<IntegerLiteral>(Cond)->getVal() != 0) {
+   if (cast<IntegerLiteral>(Cond)->getVal() == 0) {
       unsigned Open = 1;
       unsigned Close = 0;
 
@@ -1191,6 +1202,42 @@ Value* Parser::parseExpr(Type *contextualTy)
          }
 
          expect(tok::close_paren);
+
+         while (peek().is(tok::period)) {
+            auto *RV = dyn_cast<RecordVal>(V);
+            if (!RV) {
+               TG.Diags.Diag(err_generic_error)
+                  << "member access requires value of record type"
+                  << currentTok().getSourceLoc();
+
+               abortBP();
+            }
+
+            advance();
+            expect(tok::ident);
+
+            string field(currentTok().getIdentifierInfo()->getIdentifier());
+
+            auto *R = RV->getRecord();
+            auto F = R->getFieldValue(field);
+
+            if (!F) {
+               TG.Diags.Diag(err_generic_error)
+                  << "record " + R->getName() + " does not have a field named "
+                     + field
+                  << currentTok().getSourceLoc();
+
+               abortBP();
+            }
+
+            if (!peek().is(tok::period))
+            {
+               return F;
+            }
+
+            V = F;
+         }
+
          return V;
       }
    }
@@ -1227,8 +1274,8 @@ Value* Parser::parseExpr(Type *contextualTy)
 
       unsigned openedBraces = 1;
       unsigned closedBraces = 0;
-      string str;
 
+      string str;
       while (openedBraces != closedBraces) {
          switch (currentTok().getKind()) {
          case tok::open_brace:
@@ -1250,7 +1297,7 @@ Value* Parser::parseExpr(Type *contextualTy)
             break;
          }
 
-         str = currentTok().rawRepr();
+         str += currentTok().rawRepr();
          advance(false, false);
       }
 
@@ -1262,12 +1309,23 @@ Value* Parser::parseExpr(Type *contextualTy)
 
       Value *Val;
       if (auto R = RK->lookupRecord(ident)) {
-         if (peek().is(tok::period)) {
+         Val = new(TG) RecordVal(TG.getRecordType(R), R);
+
+         while (peek().is(tok::period)) {
             advance();
             expect(tok::ident);
 
+            auto *RV = dyn_cast<RecordVal>(Val);
+            if (!RV) {
+               TG.Diags.Diag(err_generic_error)
+                  << "member access requires value of record type"
+                  << currentTok().getSourceLoc();
+
+               abortBP();
+            }
+
             string field(currentTok().getIdentifierInfo()->getIdentifier());
-            auto F = R->getFieldValue(field);
+            auto F = RV->getRecord()->getFieldValue(field);
 
             if (!F) {
                TG.Diags.Diag(err_generic_error)
@@ -1278,10 +1336,13 @@ Value* Parser::parseExpr(Type *contextualTy)
                abortBP();
             }
 
-            return F;
-         }
+            if (!peek().is(tok::period))
+            {
+               return F;
+            }
 
-         Val = new(TG) RecordVal(TG.getRecordType(R), R);
+            Val = F;
+         }
       }
       // anonymous record
       else if (auto Base = RK->lookupClass(ident)) {
@@ -1490,6 +1551,59 @@ Value* Parser::parseExpr(Type *contextualTy)
       << "function " + func + " expects arg #" + std::to_string(ArgNo)  \
          + " to be a " #ValKind; abortBP(); }
 
+static bool Equals(Value *LHS, Value *RHS)
+{
+   bool Result = false;
+   if (LHS->getTypeID() == RHS->getTypeID()) {
+      switch (LHS->getTypeID()) {
+      case Value::IntegerLiteralID:
+         Result = cast<IntegerLiteral>(LHS)->getVal()
+                  == cast<IntegerLiteral>(RHS)->getVal();
+         break;
+      case Value::FPLiteralID:
+         Result = cast<FPLiteral>(LHS)->getVal() ==
+                  cast<FPLiteral>(RHS)->getVal();
+         break;
+      case Value::StringLiteralID:
+         Result = cast<StringLiteral>(LHS)->getVal()
+                  == cast<StringLiteral>(RHS)->getVal();
+         break;
+      case Value::CodeBlockID:
+         Result = cast<CodeBlock>(LHS)->getCode()
+                  == cast<CodeBlock>(RHS)->getCode();
+         break;
+      case Value::EnumValID:
+         Result = cast<EnumVal>(LHS)->getCase()
+                  == cast<EnumVal>(RHS)->getCase();
+         break;
+      case Value::RecordValID:
+         Result = cast<RecordVal>(LHS)->getRecord()
+                  == cast<RecordVal>(RHS)->getRecord();
+         break;
+      case Value::ListLiteralID: {
+         auto &values1 = cast<ListLiteral>(LHS)->getValues();
+         auto &values2 = cast<ListLiteral>(LHS)->getValues();
+
+         if (values1.size() == values2.size()) {
+            Result = true;
+            for (int i = 0; i < values1.size(); ++i) {
+               if (!Equals(values1[i], values2[i])) {
+                  Result = false;
+                  break;
+               }
+            }
+         }
+
+         break;
+      }
+      default:
+         break;
+      }
+   }
+
+   return Result;
+}
+
 Value* Parser::parseFunction(Type *contextualTy)
 {
    enum FuncKind {
@@ -1500,9 +1614,12 @@ Value* Parser::parseFunction(Type *contextualTy)
       Pop,
       First,
       Last,
+      Contains,
+      ContainsKey,
       StrConcat,
 
-      Eq, Ne,
+      Eq, Ne, Gt, Lt, Ge, Le,
+      Empty, Not,
    };
 
    auto func = tryParseIdentifier();
@@ -1513,9 +1630,17 @@ Value* Parser::parseFunction(Type *contextualTy)
       .Case("line", First)
       .Case("last", Last)
       .Case("concat", Concat)
+      .Case("contains", Contains)
+      .Case("contains_key", ContainsKey)
       .Case("str_concat", StrConcat)
       .Case("eq", Eq)
       .Case("ne", Ne)
+      .Case("empty", Empty)
+      .Case("not", Not)
+      .Case("gt", Gt)
+      .Case("lt", Lt)
+      .Case("ge", Ge)
+      .Case("le", Le)
       .Default(Unknown);
 
    expect(tok::open_paren);
@@ -1665,6 +1790,74 @@ Value* Parser::parseFunction(Type *contextualTy)
 
       return list->getValues().back();
    }
+   case Contains: {
+      if (args.empty())
+      {
+         EXPECT_NUM_ARGS(2);
+      }
+
+      bool result = false;
+      auto coll = args[0];
+      switch (coll->getType()->getTypeID())
+      {
+      case Type::ListTypeID: {
+         EXPECT_NUM_ARGS(2);
+
+         auto *list = cast<ListLiteral>(coll);
+         auto *search = args[1];
+
+         for (auto *val : list->getValues())
+         {
+            if (Equals(val, search))
+            {
+               result = true;
+               break;
+            }
+         }
+
+         break;
+      }
+      case Type::DictTypeID: {
+         EXPECT_NUM_ARGS(3);
+         EXPECT_ARG_VALUE(1, StringLiteral);
+
+         auto *list = cast<DictLiteral>(coll);
+         auto &searchKey = cast<StringLiteral>(args[1])->getVal();
+         auto *searchVal = args[2];
+
+         for (auto[key, value] : list->getValues()) {
+            if (key == searchKey && Equals(value, searchVal)) {
+               result = true;
+               break;
+            }
+         }
+
+         break;
+      }
+      default:
+         EXPECT_ARG_VALUE(0, ListLiteral);
+      }
+
+      return new(TG) IntegerLiteral(TG.getInt1Ty(), (uint64_t)result);
+   }
+   case ContainsKey: {
+      EXPECT_NUM_ARGS(2);
+      EXPECT_ARG_VALUE(0, DictLiteral);
+      EXPECT_ARG_VALUE(1, StringLiteral);
+
+      auto *dict = cast<DictLiteral>(args[0]);
+      auto &searchKey = cast<StringLiteral>(args[1])->getVal();
+
+      bool result = false;
+      for (auto[key, value] : dict->getValues()) {
+         if (key == searchKey) {
+            result = true;
+            break;
+         }
+      }
+
+      return new(TG) IntegerLiteral(TG.getInt1Ty(), (uint64_t)result);
+   }
    case Concat: {
       EXPECT_NUM_ARGS(2);
       EXPECT_ARG_VALUE(0, ListLiteral);
@@ -1713,8 +1906,53 @@ Value* Parser::parseFunction(Type *contextualTy)
       return new(TG) StringLiteral(args.front()->getType(),
                                    std::string_view(Mem, str.size()));
    }
+   case Not: {
+      EXPECT_NUM_ARGS(1);
+      EXPECT_ARG_VALUE(0, IntegerLiteral);
+
+      return new(TG) IntegerLiteral(TG.getInt1Ty(), (uint64_t)(cast<IntegerLiteral>(args[0])->getVal() == 0));
+   }
+   case Empty: {
+      EXPECT_NUM_ARGS(1);
+
+      Value *val = args[0];
+      bool Result;
+
+      switch (val->getTypeID())
+      {
+      case Value::ListLiteralID:
+         Result = cast<ListLiteral>(val)->getValues().empty();
+         break;
+      case Value::DictLiteralID:
+         Result = cast<DictLiteral>(val)->getValues().empty();
+         break;
+      case Value::StringLiteralID:
+         Result = cast<StringLiteral>(val)->getVal().empty();
+         break;
+      default:
+         TG.Diags.Diag(err_generic_error)
+            << "function 'empty' expects a string or list argument";
+
+         abortBP();
+      }
+
+      return new(TG) IntegerLiteral(TG.getInt1Ty(), (uint64_t)Result);
+   }
    case Eq:
    case Ne: {
+      EXPECT_NUM_ARGS(2);
+
+      Value *LHS = args[0];
+      Value *RHS = args[1];
+
+      bool Result = Equals(LHS, RHS);
+      if (kind == Ne) {
+         Result = !Result;
+      }
+
+      return new(TG) IntegerLiteral(TG.getInt1Ty(), (uint64_t)Result);
+   }
+   case Gt: case Lt: case Ge: case Le: {
       EXPECT_NUM_ARGS(2);
 
       Value *LHS = args[0];
@@ -1724,31 +1962,57 @@ Value* Parser::parseFunction(Type *contextualTy)
       if (LHS->getTypeID() == RHS->getTypeID()) {
          switch (LHS->getTypeID()) {
          case Value::IntegerLiteralID:
-            Result = cast<IntegerLiteral>(LHS)->getVal()
-               == cast<IntegerLiteral>(RHS)->getVal();
+            switch (kind)
+            {
+            case Gt:
+               Result = cast<IntegerLiteral>(LHS)->getVal()
+                        > cast<IntegerLiteral>(RHS)->getVal();
+               break;
+            case Lt:
+               Result = cast<IntegerLiteral>(LHS)->getVal()
+                        < cast<IntegerLiteral>(RHS)->getVal();
+               break;
+            case Ge:
+               Result = cast<IntegerLiteral>(LHS)->getVal()
+                        >= cast<IntegerLiteral>(RHS)->getVal();
+               break;
+            case Le:
+            default:
+               Result = cast<IntegerLiteral>(LHS)->getVal()
+                        <= cast<IntegerLiteral>(RHS)->getVal();
+               break;
+            }
+
             break;
          case Value::FPLiteralID:
-            Result = cast<FPLiteral>(LHS)->getVal() ==
-               cast<FPLiteral>(RHS)->getVal();
-            break;
-         case Value::StringLiteralID:
-            Result = cast<StringLiteral>(LHS)->getVal()
-                     == cast<StringLiteral>(RHS)->getVal();
-            break;
-         case Value::CodeBlockID:
-            Result = cast<CodeBlock>(LHS)->getCode()
-                     == cast<CodeBlock>(RHS)->getCode();
+            switch (kind)
+            {
+            case Gt:
+               Result = cast<FPLiteral>(LHS)->getVal()
+                        > cast<FPLiteral>(RHS)->getVal();
+               break;
+            case Lt:
+               Result = cast<FPLiteral>(LHS)->getVal()
+                        < cast<FPLiteral>(RHS)->getVal();
+               break;
+            case Ge:
+               Result = cast<FPLiteral>(LHS)->getVal()
+                        >= cast<FPLiteral>(RHS)->getVal();
+               break;
+            case Le:
+            default:
+               Result = cast<FPLiteral>(LHS)->getVal()
+                        <= cast<FPLiteral>(RHS)->getVal();
+               break;
+            }
+
             break;
          default:
             break;
          }
       }
 
-      if (kind == Ne) {
-         Result = !Result;
-      }
-
-      return new(TG) IntegerLiteral(TG.getInt1Ty(), (uint64_t)1);
+      return new(TG) IntegerLiteral(TG.getInt1Ty(), (uint64_t)Result);
    }
    }
 

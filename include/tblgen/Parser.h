@@ -7,6 +7,9 @@
 #include "tblgen/Message/DiagnosticsEngine.h"
 #include "tblgen/TableGen.h"
 
+#include <array>
+#include <sstream>
+
 namespace tblgen {
 
 class RecordKeeper;
@@ -21,23 +24,22 @@ class Parser {
 public:
    Parser(TableGen &TG,
           const std::string &Buf,
-          unsigned sourceId);
+          unsigned sourceId,
+          unsigned baseOffset);
+
+   Parser(TableGen &TG,
+          const std::vector<lex::Token> &Toks,
+          unsigned sourceId,
+          unsigned baseOffset);
 
    ~Parser();
 
    bool parse();
 
-   RecordKeeper &getRK()
-   {
-      return *GlobalRK;
-   }
-
-private:
+protected:
    TableGen &TG;
    lex::Lexer lex;
    Class *currentClass = nullptr;
-
-   std::unique_ptr<RecordKeeper> GlobalRK;
    RecordKeeper *RK;
 
    lex::Lexer::LookaheadRAII *LR = nullptr;
@@ -111,6 +113,12 @@ private:
          P.ForEachVals.emplace(name, V);
       }
 
+      ForEachScope(Parser &P, const std::string &name, Value *V)
+         : P(P), name(name)
+      {
+         P.ForEachVals.emplace(name, V);
+      }
+
       ~ForEachScope()
       {
          P.ForEachVals.erase(P.ForEachVals.find(name));
@@ -161,6 +169,62 @@ private:
          exit(1);
       }
    }
+};
+
+class TemplateParser: public Parser {
+public:
+   TemplateParser(TableGen &TG,
+                  const std::string &Buf,
+                  unsigned sourceId,
+                  unsigned baseOffset);
+
+   TemplateParser(TableGen &TG,
+                  const std::vector<lex::Token> &Toks,
+                  unsigned sourceId,
+                  unsigned baseOffset);
+
+   bool parseTemplate();
+   std::string getResult();
+
+private:
+   struct Macro
+   {
+      std::vector<std::string> params;
+      std::vector<lex::Token> tokens;
+   };
+
+   std::ostringstream OS;
+   std::ostringstream *ActiveOS;
+   std::vector<lex::Token> currentTokens;
+   std::unordered_map<std::string, Macro> macros;
+
+   bool commandFollows();
+
+   void appendTokens(bool beforeCommand = false);
+
+   void parseUntilEnd(bool *isElse = nullptr);
+   void skipUntilEnd(std::vector<lex::Token> *tokens = nullptr);
+
+   void advanceNoSkip()
+   {
+      advance(false, false);
+   }
+
+   lex::Token peekNoSkip()
+   {
+      return peek(false, false);
+   }
+
+   void handleTemplateExpr(bool *isEnd = nullptr, bool *isElse = nullptr);
+
+   Value *handleCommand(bool paste, bool &explicitStr,
+                        bool *isEnd = nullptr, bool *isElse = nullptr);
+
+   Value *handleIf(bool paste);
+   Value *handleForeach(bool paste);
+
+   Value *handleDefine(bool paste);
+   Value *handleInvoke(bool paste);
 };
 
 } // namespace tblgen

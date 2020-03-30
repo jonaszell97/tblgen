@@ -148,7 +148,7 @@ struct Token {
    {
       assert(oneOf(tok::charliteral, tok::stringliteral, tok::fpliteral,
                    tok::integerliteral, tok::space, tok::closure_arg,
-                   tok::macro_name)
+                   tok::macro_name, tok::line_comment, tok::block_comment)
              && "not a literal token");
       return std::string_view((const char*)Ptr, Data);
    }

@@ -14,6 +14,9 @@
    TBLGEN_OTHER_TOKEN(sentinel, "")
    TBLGEN_OTHER_TOKEN(eof, "")
 
+   TBLGEN_OTHER_TOKEN(line_comment, "")
+   TBLGEN_OTHER_TOKEN(block_comment, "")
+
    TBLGEN_OTHER_TOKEN(expr_begin, "")
    TBLGEN_OTHER_TOKEN(stringify_begin, "")
    TBLGEN_OTHER_TOKEN(preprocessor_value, "")

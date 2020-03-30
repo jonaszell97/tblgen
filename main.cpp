@@ -9,7 +9,6 @@
 #include "tblgen/Support/StringSwitch.h"
 #include "tblgen/TableGen.h"
 
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -23,11 +22,14 @@ using std::string;
 namespace {
 
 enum Backend {
+   B_Template,
    B_Custom,
    B_PrintRecords,
    B_EmitClassHierarchy,
 };
 
+/// Transform a pass name argument into the symbol name to search for, e.g.
+/// -do-something --> EmitDoSomething
 string symbolFromPassName(string passName)
 {
    string s("Emit");
@@ -54,13 +56,32 @@ string symbolFromPassName(string passName)
 }
 
 struct Options {
-   string TGFile;
-   string OutFile;
+   /// The definition (*.tg) file.
+   string tgFile;
 
+   /// The file to print the output to. If empty, use stdout.
+   string outFile;
+
+   /// The backend to use, or B_Custom if a custom one was supplied.
    Backend backend = B_PrintRecords;
+
+   /// The name of the custom backend, if applicable.
    string backendName;
-   string CustomBackendLib;
+
+   /// The path to the dynamic library containing the custom backend.
+   string customBackendLib;
+
+   /// The template file to apply the definitions to.
+   string templateFile;
 };
+
+void printHelpDialog(std::ostream &OS)
+{
+   OS << "TblGen, a tool for structured code generation\n"
+      << "Version 0.3, Copyright 2019 by Jonas Zell\n"
+      << "Usage: tblgen <definition file> <backend> [<backend library>] [-o <output file>]\n"
+      << "Refer to /examples for example usage.\n";
+}
 
 Options parseOptions(DiagnosticsEngine &Diags, int argc, char **argv)
 {
@@ -69,7 +90,7 @@ Options parseOptions(DiagnosticsEngine &Diags, int argc, char **argv)
       string arg(argv[i]);
       if (arg.front() == '-') {
          if (arg == "-o") {
-            if (!opts.OutFile.empty())
+            if (!opts.outFile.empty())
                Diags.Diag(err_generic_error) << "output file already specified";
 
             if (++i == argc) {
@@ -79,7 +100,21 @@ Options parseOptions(DiagnosticsEngine &Diags, int argc, char **argv)
                break;
             }
 
-            opts.OutFile = argv[i];
+            opts.outFile = argv[i];
+         }
+         else if (arg == "-t") {
+            if (++i == argc) {
+               Diags.Diag(err_generic_error)
+                  << "expecting template filename after -t";
+
+               break;
+            }
+
+            opts.templateFile = argv[i];
+            opts.backend = B_Template;
+         }
+         else if (arg == "-help") {
+            printHelpDialog(std::cout);
          }
          else {
             opts.backendName = arg;
@@ -97,17 +132,17 @@ Options parseOptions(DiagnosticsEngine &Diags, int argc, char **argv)
                   break;
                }
 
-               opts.CustomBackendLib = argv[i];
+               opts.customBackendLib = argv[i];
             }
          }
       }
-      else if (!opts.TGFile.empty()) {
+      else if (!opts.tgFile.empty()) {
          Diags.Diag(err_generic_error) << "filename already specified";
 
          break;
       }
       else {
-         opts.TGFile = arg;
+         opts.tgFile = arg;
       }
    }
 
@@ -129,6 +164,11 @@ extern "C" void __asan_version_mismatch_check_apple_clang_1100() {}
 
 int main(int argc, char **argv)
 {
+   if (argc == 1) {
+      printHelpDialog(std::cout);
+      return 0;
+   }
+
    fs::FileManager FileMgr;
    TblGenDiagConsumer Consumer;
 
@@ -140,20 +180,20 @@ int main(int argc, char **argv)
       return 1;
    }
 
-   if (opts.TGFile.empty()) {
+   if (opts.tgFile.empty()) {
       Diags.Diag(err_generic_error) << "no input file specified";
       return 1;
    }
 
-   auto maybeBuf = FileMgr.openFile(opts.TGFile);
+   auto maybeBuf = FileMgr.openFile(opts.tgFile);
    if (!maybeBuf) {
-      Diags.Diag(err_generic_error) << "file not found: " + opts.TGFile;
+      Diags.Diag(err_generic_error) << "file not found: " + opts.tgFile;
       return 1;
    }
 
    auto &buf = maybeBuf.getValue();
    TableGen TG(Allocator, FileMgr, Diags);
-   Parser parser(TG, buf.Buf, buf.SourceId);
+   Parser parser(TG, buf.Buf, buf.SourceId, buf.BaseOffset);
 
    if (!parser.parse()) {
       return 1;
@@ -161,14 +201,13 @@ int main(int argc, char **argv)
 
    // use a string stream first so that the actual file is not affected if
    // TblGen crashes
-   std::string str;
-   std::stringstream OS(str);
+   std::stringstream OS;
 
-   auto &RK = parser.getRK();
+   auto &RK = *TG.GlobalRK;
    switch (opts.backend) {
    case B_Custom: {
       std::string errMsg;
-      auto DyLib = DynamicLibrary::Open(opts.CustomBackendLib.data(), &errMsg);
+      auto DyLib = DynamicLibrary::Open(opts.customBackendLib, &errMsg);
 
       if (!errMsg.empty()) {
          Diags.Diag(err_generic_error) << "error opening dylib: " + errMsg;
@@ -199,10 +238,35 @@ int main(int argc, char **argv)
    case B_EmitClassHierarchy:
       EmitClassHierarchy(OS, RK);
       break;
+   case B_Template: {
+      if (!opts.backendName.empty() || !opts.customBackendLib.empty()) {
+         Diags.Diag(warn_generic_warn)
+            << "backend unused because a template was specified";
+      }
+
+      auto maybeTemplateBuf = FileMgr.openFile(opts.templateFile);
+      if (!maybeTemplateBuf) {
+         Diags.Diag(err_generic_error)
+            << "file not found: " + opts.templateFile;
+
+         return 1;
+      }
+
+      auto &templateBuf = maybeTemplateBuf.getValue();
+      TemplateParser parser(TG, templateBuf.Buf, templateBuf.SourceId,
+                             templateBuf.BaseOffset);
+
+      if (!parser.parseTemplate()) {
+         return 1;
+      }
+
+      OS << parser.getResult();
+      break;
+   }
    }
 
-   if (!opts.OutFile.empty()) {
-      std::ofstream ofs(opts.OutFile);
+   if (!opts.outFile.empty()) {
+      std::ofstream ofs(opts.outFile);
       if (ofs.fail()) {
          Diags.Diag(err_generic_error) << strerror(errno);
 

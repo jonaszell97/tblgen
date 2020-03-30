@@ -1,0 +1,12 @@
+
+class Animal {
+
+}
+
+def Dog : Animal {
+
+}
+
+def Cat : Animal {
+    
+}

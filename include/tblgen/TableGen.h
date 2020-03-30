@@ -9,7 +9,7 @@
 
 #include <unordered_map>
 
-#define unreachable(MSG) assert(false && MSG)
+#define unreachable(MSG) assert(false && MSG); __builtin_unreachable()
 
 namespace tblgen {
 
@@ -27,15 +27,7 @@ using TableGenBackend = void(std::ostream&, RecordKeeper&);
 class TableGen {
 public:
    TableGen(support::ArenaAllocator &Allocator, fs::FileManager &fileMgr,
-            DiagnosticsEngine &Diags)
-      : Allocator(Allocator), fileMgr(fileMgr), Diags(Diags),
-        Idents(Allocator, 1024),
-        Int1Ty(1, false),
-        Int8Ty(8, false),   UInt8Ty(8, true),
-        Int16Ty(16, false), UInt16Ty(16, true),
-        Int32Ty(32, false), UInt32Ty(32, true),
-        Int64Ty(64, false), UInt64Ty(64, true)
-   {}
+            DiagnosticsEngine &Diags);
 
    void *Allocate(size_t size, size_t alignment = 8) const
    {
@@ -77,6 +69,7 @@ public:
    support::ArenaAllocator &Allocator;
    fs::FileManager &fileMgr;
    DiagnosticsEngine &Diags;
+   std::unique_ptr<RecordKeeper> GlobalRK;
 
 private:
    mutable IdentifierTable Idents;

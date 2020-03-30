@@ -212,6 +212,7 @@ Token Lexer::lexNextToken()
       return lexNumericLiteral();
    // preprocessing related tokens
    case '#': {
+      return lexIdentifier();
 //      if (*CurPtr == '{') {
 //         tokens.push_back(makeToken(tok::expr_begin));
 //         lexPreprocessorExpr();
@@ -251,8 +252,7 @@ Token Lexer::lexNextToken()
 //         return Token(&II, SourceLocation(TokBegin - BufStart + offset),
 //                      II.getKeywordTokenKind());
 //      }
-
-      unreachable("what preprocessor?");
+//      unreachable("what preprocessor?");
    }
    // dollar identifier
    case '$': {
@@ -1073,6 +1073,7 @@ bool Lexer::isIdentifierContinuationChar(char c)
       case ' ':
       case '\0':
       case '$':
+      case '#':
          return false;
       default:
          return true;
@@ -1234,7 +1235,9 @@ Token Lexer::skipSingleLineComment()
    while (*CurPtr != '\n' && *CurPtr != '\0')
       ++CurPtr;
 
-   return lexNextToken();
+   return Token(TokBegin, CurPtr - TokBegin,
+                tok::line_comment,
+                SourceLocation(TokBegin - BufStart + offset));
 }
 
 Token Lexer::skipMultiLineComment()
@@ -1244,12 +1247,18 @@ Token Lexer::skipMultiLineComment()
    ++CurPtr;
    while (1) {
       switch (*CurPtr++) {
-         case '\0':
-            return lexNextToken();
+         case '\0': {
+            return Token(TokBegin, CurPtr - TokBegin,
+                         tok::block_comment,
+                         SourceLocation(TokBegin - BufStart + offset));
+         }
          case '*':
             if (*CurPtr == '/') {
                ++CurPtr;
-               return lexNextToken();
+
+               return Token(TokBegin, CurPtr - TokBegin,
+                            tok::block_comment,
+                            SourceLocation(TokBegin - BufStart + offset));
             }
 
             [[fallthrough]];
@@ -1302,6 +1311,8 @@ void Lexer::advance(bool ignoreNewline,
 
       break;
    case tok::space:
+   case tok::line_comment:
+   case tok::block_comment:
       if (!significantWhiteSpace) {
          return advance(ignoreNewline, significantWhiteSpace, false);
       }
@@ -1337,6 +1348,8 @@ Token Lexer::lookahead(bool ignoreNewline, bool sw, size_t offset)
 
       break;
    case tok::space:
+   case tok::line_comment:
+   case tok::block_comment:
       if (!sw) {
          return lookahead(ignoreNewline, sw, offset + 1);
       }

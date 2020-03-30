@@ -28,7 +28,7 @@ set(SOURCE_FILES include/tblgen/Parser.h
         src/Support/LiteralParser.cpp include/tblgen/Support/LiteralParser.h
         src/Message/DiagnosticsEngine.cpp include/tblgen/Message/DiagnosticsEngine.h
         include/tblgen/Support/StringSwitch.h src/Support/DynamicLibrary.cpp include/tblgen/Support/DynamicLibrary.h
-        include/tblgen/Support/Allocator.h include/tblgen/Support/Optional.h)
+        include/tblgen/Support/Allocator.h include/tblgen/Support/Optional.h src/TemplateParser.cpp)
 
 add_executable(tblgen main.cpp ${SOURCE_FILES})
 add_executable(tblgen-asan main.cpp ${SOURCE_FILES})

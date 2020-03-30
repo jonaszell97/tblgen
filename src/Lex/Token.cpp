@@ -60,6 +60,8 @@ SourceLocation Token::getEndLoc() const
    case tok::stringliteral:
    case tok::integerliteral:
    case tok::fpliteral:
+   case tok::line_comment:
+   case tok::block_comment:
       Length = Data;
       break;
 #  define TBLGEN_OPERATOR_TOKEN(Name, Spelling)             \
@@ -120,10 +122,13 @@ void Token::print(std::ostream &OS) const
    case tok::ident:
    case tok::op_ident:
       OS << getIdentifier(); return;
-   case tok::dollar_ident: {
+   case tok::dollar_ident:
       OS << "$" << getIdentifier();
       return;
-   }
+   case tok::line_comment:
+   case tok::block_comment:
+      OS << getText();
+      break;
    case tok::charliteral:
    case tok::stringliteral:
       OS << std::string_view(reinterpret_cast<const char*>(Ptr) - 1, Data + 2);
@@ -171,6 +176,7 @@ bool Token::isWhitespace() const
 {
    switch (getKind()) {
    case tok::space: case tok::newline:
+   case tok::line_comment: case tok::block_comment:
       return true;
    default:
       return false;
@@ -223,10 +229,33 @@ string Token::toString() const
 
 string Token::rawRepr() const
 {
-   std::ostringstream OS;
-   print(OS);
+   string s;
+   if (kind == tok::space) {
+      s += getText();
+      return s;
+   }
 
-   return OS.str();
+   switch (kind) {
+   case tok::charliteral:
+   case tok::stringliteral:
+      s += std::string_view(reinterpret_cast<const char*>(Ptr) - 1, Data + 2);
+      break;
+   case tok::newline:
+#ifdef _WIN32
+      s += '\r';
+#endif
+
+      s += '\n';
+      break;
+#  define CDOT_PUNCTUATOR_TOKEN(Name, Spelling)                               \
+   case tok::Name: s += (Spelling); break;
+#  include "tblgen/Lex/Tokens.def"
+   default:
+      s += toString();
+      break;
+   }
+
+   return s;
 }
 
 bool Token::is_punctuator() const

@@ -147,6 +147,7 @@ public:
    const char* getSrc() { return BufStart; }
    const char* getBuffer() { return CurPtr; }
    [[nodiscard]] unsigned int getSourceId() const { return sourceId; }
+   [[nodiscard]] unsigned int getOffset() const { return offset; }
 
    [[nodiscard]] unsigned currentIndex() const { return unsigned(CurPtr - BufStart); }
 

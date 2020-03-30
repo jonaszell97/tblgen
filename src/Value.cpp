@@ -96,7 +96,7 @@ std::ostream &operator<<(std::ostream &str, Value const* V)
       str << DA->getDict() << "[\"" << DA->getKey() << "\"]";
    }
    else if (auto EV = dyn_cast<EnumVal>(V)) {
-      str << EV->getType() << "." << EV->getCase()->caseName;
+      str << EV->getCase()->caseName;
    }
    else {
       unreachable("unhandled value kind");
