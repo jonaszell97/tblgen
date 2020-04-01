@@ -1617,6 +1617,7 @@ Value* Parser::parseFunction(Type *contextualTy)
       Contains,
       ContainsKey,
       StrConcat,
+      Upper, Lower,
 
       Eq, Ne, Gt, Lt, Ge, Le,
       Empty, Not,
@@ -1633,6 +1634,8 @@ Value* Parser::parseFunction(Type *contextualTy)
       .Case("contains", Contains)
       .Case("contains_key", ContainsKey)
       .Case("str_concat", StrConcat)
+      .Case("upper", Upper)
+      .Case("lower", Lower)
       .Case("eq", Eq)
       .Case("ne", Ne)
       .Case("empty", Empty)
@@ -1905,6 +1908,24 @@ Value* Parser::parseFunction(Type *contextualTy)
 
       return new(TG) StringLiteral(args.front()->getType(),
                                    std::string_view(Mem, str.size()));
+   }
+   case Upper: {
+      EXPECT_NUM_ARGS(1);
+      EXPECT_ARG_VALUE(0, StringLiteral);
+
+      std::string str(cast<StringLiteral>(args[0])->getVal());
+      std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c){ return std::toupper(c); });
+
+      return new(TG) StringLiteral(TG.getStringTy(), str);
+   }
+   case Lower: {
+      EXPECT_NUM_ARGS(1);
+      EXPECT_ARG_VALUE(0, StringLiteral);
+
+      std::string str(cast<StringLiteral>(args[0])->getVal());
+      std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c){ return std::tolower(c); });
+
+      return new(TG) StringLiteral(TG.getStringTy(), str);
    }
    case Not: {
       EXPECT_NUM_ARGS(1);

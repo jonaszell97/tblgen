@@ -2,4 +2,11 @@
 cmake . && make
 
 # run tblgen
-tblgen Example01.tg -pretty-print libexample01.dylib
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)     extension=so;;
+    Darwin*)    extension=dylib;;
+    *)          extension=so;;
+esac
+
+tblgen Example01.tg -pretty-print libexample01.${extension}
