@@ -297,6 +297,35 @@ class Bird : Animal<true>
 class Mammal<let laysEggs: i1 = false> : Animal<laysEggs>
 ```
 
+Subclasses can also `override` properties of their base classes to provide a (different) default value for records implementing them.
+
+```typescript
+class Animal {
+    let makesSound: i1
+}
+
+class Fish {
+    override makesSound = false
+}
+```
+
+### Enums
+
+Enums are special types of classes than can only take on one of several predefined values. They are introduced using the `enum` keyword and contain a comma separated list of cases in their body. Each enum case can optionally specify a unique integer value; if one is not provided, a linearly increasing value starting from 0 is assigned.
+
+```typescript
+enum AnimalGroup {
+    Mammal,       // -> 0
+    Bird,         // -> 1
+    Fish = 7,     // -> 7
+    Reptile,      // -> 8
+    Amphibian,    // -> 9
+    Invertebrate, // -> 10
+}
+
+let myFavoriteGroup: AnimalGroup = .Reptile
+```
+
 ### Records
 
 Records are instantiations of one or more classes. They represent the actual data in your TblGen file. Records are introduced using the `def` keyword followed by the record name. A record can implement any number of classes, but must implement at least one.
@@ -314,3 +343,70 @@ def Cat : Animal {
     sound = "meow"
 }
 ```
+
+### Namespaces
+
+Namespaces allow logical grouping of your classes and records. A namespace is introduced with the `namespace` keyword and can contain any number of declarations. To refer to the declarations within a namespace, you must provide the namespace name.
+
+```typescript
+namespace Stars {
+    def Sun {}
+}
+
+namespace Companies {
+    def Sun {}
+}
+
+let x = Sun // Error: 'Sun' is not declared
+let y = Stars.Sun // OK
+```
+
+Namespaces can be nested, and duplicate declarations of the same namespace are allowed, they will be treated as if they were a single namespace.
+
+### Control statements
+
+There are two types of control statements you can use in TblGen files: `if` and `foreach`.
+
+#### If statements
+
+`if` statements allow you to optionally include a group of declarations. If the given condition evaluates to false, the entire body of the `if` statement will be ignored.
+
+```typescript
+if someCondition {
+    def ConditionalRecord {}
+}
+```
+
+#### Foreach statements
+
+`foreach` statements allow you to define a group of declarations multiple times with slightly altered parameters. To use them, you provide a list of values to iterate over as well as a name to give to the current value. You can then refer to that value in the body of the `foreach` statement, which will be duplicated once for every element in the list you provided.
+
+```typescript
+foreach name in ["Tom", "Russell", "Drew"] {
+    def $(name) : Quarterback
+}
+```
+
+### Print statements
+
+A `print` statement simply outputs the following expression to stdout during compilation. It can be used to verify assumptions you made in your TblGen file.
+
+```typescript
+print !eq(3, 4) // => "false"
+```
+
+### Include statements
+
+`include` statements allow you to paste the contents of other files into the current file at the position of the include. This can be helpful for sharing declarations between multiple TblGen files, or for simply separating your declarations into multiple files for organizational purposes.
+
+```typescript
+include "../path/to/some/file.tg"
+```
+
+## Template file syntax
+
+TODO
+
+## C++ Backends
+
+TODO

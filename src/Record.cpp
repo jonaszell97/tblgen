@@ -158,13 +158,22 @@ void Enum::addCase(std::string_view caseName,
       val = caseVal;
       assert(casesByValue.count(val) == 0 && "duplicate case value");
    }
-   else
+   else if (!casesByValue.empty())
    {
-      val = casesByName.size();
+      val = std::max_element(casesByValue.begin(), casesByValue.end(),
+         [](std::unordered_map<uint64_t, EnumCase*>::value_type const &v1,
+            std::unordered_map<uint64_t, EnumCase*>::value_type const &v2) {
+         return v1.first > v2.first;
+      })->first;
+
       while (casesByValue.count(val) != 0)
       {
          ++val;
       }
+   }
+   else
+   {
+      val = 0;
    }
 
    auto *c = new(RK.getAllocator()) EnumCase { move(name), val };
