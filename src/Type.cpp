@@ -50,9 +50,17 @@ std::ostream &operator<<(std::ostream &str, Type const* Ty)
    case Type::ClassTypeID:
       str << cast<ClassType>(Ty)->getClass()->getName();
       break;
-   case Type::RecordTypeID:
-      str << cast<RecordType>(Ty)->getRecord()->getName();
+   case Type::RecordTypeID: {
+      auto name = cast<RecordType>(Ty)->getRecord()->getName();
+      if (name.empty()) {
+         str << "<anonymous '" << cast<RecordType>(Ty)->getRecord()->getBases().front().getBase()->getName() << "'>";
+      }
+      else {
+         str << name;
+      }
+
       break;
+   }
    case Type::EnumTypeID:
       str << cast<EnumType>(Ty)->getEnum()->getName();
       break;

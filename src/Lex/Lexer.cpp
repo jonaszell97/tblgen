@@ -103,7 +103,7 @@ void Lexer::LookaheadRAII::advance(bool ignoreNewline,
    L.advance(false, true);
 
    while ((ignoreNewline && L.currentTok().is(tok::newline))
-         || (!significantWhitespace && L.currentTok().is(tok::space))) {
+         || (!significantWhitespace && L.currentTok().oneOf(tok::space, tok::line_comment, tok::block_comment))) {
       Tokens.push_back(L.currentTok());
       L.advance(false, true);
    }

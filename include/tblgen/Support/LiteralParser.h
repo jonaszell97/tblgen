@@ -2,6 +2,7 @@
 #ifndef TBLGEN_LITERALPARSER_H
 #define TBLGEN_LITERALPARSER_H
 
+#include <cassert>
 #include <string>
 
 namespace tblgen {

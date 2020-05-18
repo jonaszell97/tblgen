@@ -57,7 +57,7 @@ protected:
                             std::vector<size_t> &fieldParameters);
    void parseBases(Class *C);
    void parseFieldDecl(Class *C);
-   void parseOverrideDecl(Class *C);
+   void parseOverrideDecl(Class *C, bool isAppend);
 
    void parseRecord();
    void parseBases(Record *R);

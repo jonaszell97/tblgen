@@ -98,7 +98,7 @@ private:
 
 class StringLiteral: public Value {
 public:
-   explicit StringLiteral(Type *Ty, std::string_view Val)
+   explicit StringLiteral(Type *Ty, std::string &&Val)
       : Value(StringLiteralID, Ty), Val(Val)
    { }
 
@@ -160,6 +160,12 @@ public:
       for (size_t i = 0; i < Keys.size(); ++i)
          this->Values.emplace(support::cast<StringLiteral>(Keys[i])->getVal(),
             Values[i]);
+   }
+
+   explicit DictLiteral(Type *Ty, std::unordered_map<std::string, Value*> &&Entries)
+      : Value(DictLiteralID, Ty), Values(move(Entries))
+   {
+
    }
 
    const std::unordered_map<std::string, Value*> &getValues() const

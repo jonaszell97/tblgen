@@ -33,8 +33,10 @@ set(SOURCE_FILES include/tblgen/Parser.h
 add_executable(tblgen main.cpp ${SOURCE_FILES})
 add_executable(tblgen-asan main.cpp ${SOURCE_FILES})
 
-target_link_libraries(tblgen-asan /usr/local/Cellar/gcc/9.2.0_1/lib/gcc/9/libasan.5.dylib)
 target_compile_options(tblgen-asan
         PUBLIC "-fsanitize=address"
-        PUBLIC "-fno-omit-frame-pointer"
-        PUBLIC "-O1")
+        PUBLIC "-fno-omit-frame-pointer")
+
+target_link_options(tblgen-asan
+        PUBLIC "-fsanitize=address"
+        PUBLIC "-fno-omit-frame-pointer")

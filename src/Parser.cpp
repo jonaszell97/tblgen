@@ -177,7 +177,10 @@ void Parser::parseClassLevelDecl(Class *C)
       parseFieldDecl(C);
    }
    else if (currentTok().isIdentifier("override")) {
-      parseOverrideDecl(C);
+      parseOverrideDecl(C, false);
+   }
+   else if (currentTok().isIdentifier("append")) {
+      parseOverrideDecl(C, true);
    }
    else if (currentTok().is(tok::tblgen_if)) {
       parseIf(C, nullptr);
@@ -322,74 +325,19 @@ void Parser::parseFieldDecl(Class *C)
    }
 }
 
-void Parser::parseOverrideDecl(Class *C)
-{
-   assert(currentTok().isIdentifier("override"));
-   advance();
-
-   auto loc = currentTok().getSourceLoc();
-   auto name = tryParseIdentifier();
-   advance();
-
-   // Verify that the field exists in a base class.
-   RecordField *Field = nullptr;
-   for (auto &Base : C->getBases()) {
-      auto *F = Base.getBase()->getField(name);
-      if (F) {
-         Field = F;
-         break;
-      }
-   }
-
-   if (!Field) {
-      TG.Diags.Diag(err_generic_error)
-         << "'override' declaration does not override a base class field"
-         << lex.getSourceLoc();
-
-      abortBP();
-   }
-
-   auto Ty = Field->getType();
-
-   Value *defaultValue = nullptr;
-   if (currentTok().is(tok::equals)) {
-      advance();
-
-      defaultValue = parseExpr(Ty);
-   }
-   else {
-      TG.Diags.Diag(err_generic_error)
-         << "expected override value"
-         << lex.getSourceLoc();
-
-      abortBP();
-   }
-
-   auto newDecl = C->addOverride(name, Ty, defaultValue, loc);
-   if (!newDecl) {
-      TG.Diags.Diag(err_generic_error)
-         << "duplicate declaration of override " + name + " for class "
-            + C->getName()
-         << loc;
-
-      TG.Diags.Diag(note_generic_note)
-         << "previous declaration here"
-         << C->getOverride(name)->getDeclLoc();
-   }
-}
 
 namespace {
-   enum TemplateParamResultKind {
-      TP_Success,
-      TP_TooFewParamsGiven,
-      TP_TooManyParamsGiven,
-      TP_IncompatibleType,
-   };
+enum TemplateParamResultKind {
+   TP_Success,
+   TP_TooFewParamsGiven,
+   TP_TooManyParamsGiven,
+   TP_IncompatibleType,
+};
 
-   struct TemplateParamResult {
-      TemplateParamResultKind kind;
-      size_t incompatibleIndex = size_t(-1);
-   };
+struct TemplateParamResult {
+   TemplateParamResultKind kind;
+   size_t incompatibleIndex = size_t(-1);
+};
 } // anonymous namespace
 
 static bool typesCompatible(Type *given, Type *needed)
@@ -452,6 +400,81 @@ static TemplateParamResult checkTemplateParams(Class &C,
    }
 
    return { TP_Success };
+}
+
+
+void Parser::parseOverrideDecl(Class *C, bool isAppend)
+{
+   assert(currentTok().isIdentifier("override"));
+   advance();
+
+   auto loc = currentTok().getSourceLoc();
+   auto name = tryParseIdentifier();
+   advance();
+
+   // Verify that the field exists in a base class.
+   RecordField *Field = nullptr;
+   for (auto &Base : C->getBases()) {
+      auto *F = Base.getBase()->getField(name);
+      if (F) {
+         Field = F;
+         break;
+      }
+   }
+
+   if (!Field) {
+      TG.Diags.Diag(err_generic_error)
+         << "'override' declaration does not override a base class field"
+         << lex.getSourceLoc();
+
+      abortBP();
+   }
+
+   auto Ty = Field->getType();
+   if (isAppend && !isa<ListType>(Ty) && !isa<DictType>(Ty))
+   {
+      TG.Diags.Diag(err_generic_error)
+         << "'append' modifier can only be used on list or dict types"
+         << lex.getSourceLoc();
+
+      abortBP();
+   }
+
+   Value *defaultValue = nullptr;
+   if (currentTok().is(tok::equals)) {
+      advance();
+
+      defaultValue = parseExpr(Ty);
+   }
+   else {
+      TG.Diags.Diag(err_generic_error)
+         << "expected override value"
+         << lex.getSourceLoc();
+
+      abortBP();
+   }
+
+   if (!typesCompatible(defaultValue->getType(), Ty))
+   {
+      TG.Diags.Diag(err_generic_error)
+         << "value of type " + defaultValue->getType()->toString()
+            + " cannot override property of type " + Ty->toString()
+         << loc;
+
+      abortBP();
+   }
+
+   auto newDecl = C->addOverride(name, Ty, defaultValue, loc, isAppend);
+   if (!newDecl) {
+      TG.Diags.Diag(err_generic_error)
+         << "duplicate declaration of override " + name + " for class "
+            + C->getName()
+         << loc;
+
+      TG.Diags.Diag(note_generic_note)
+         << "previous declaration here"
+         << C->getOverride(name)->getDeclLoc();
+   }
 }
 
 void Parser::validateTemplateArgs(Class &Base,
@@ -1169,7 +1192,8 @@ Value* Parser::parseExpr(Type *contextualTy)
    }
 
    if (currentTok().is(tok::stringliteral)) {
-      return new(TG) StringLiteral(TG.getStringTy(), currentTok().getText());
+      return new(TG) StringLiteral(TG.getStringTy(),
+                                   std::string(currentTok().getText()));
    }
 
    if (currentTok().oneOf(tok::kw_true, tok::kw_false)) {
@@ -1903,11 +1927,7 @@ Value* Parser::parseFunction(Type *contextualTy)
          str += cast<StringLiteral>(Arg)->getVal();
       }
 
-      char *Mem = TG.Allocate<char>(str.size());
-      std::copy(str.begin(), str.end(), Mem);
-
-      return new(TG) StringLiteral(args.front()->getType(),
-                                   std::string_view(Mem, str.size()));
+      return new(TG) StringLiteral(args.front()->getType(), move(str));
    }
    case Upper: {
       EXPECT_NUM_ARGS(1);
@@ -1916,7 +1936,7 @@ Value* Parser::parseFunction(Type *contextualTy)
       std::string str(cast<StringLiteral>(args[0])->getVal());
       std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c){ return std::toupper(c); });
 
-      return new(TG) StringLiteral(TG.getStringTy(), str);
+      return new(TG) StringLiteral(TG.getStringTy(), move(str));
    }
    case Lower: {
       EXPECT_NUM_ARGS(1);
@@ -1925,7 +1945,7 @@ Value* Parser::parseFunction(Type *contextualTy)
       std::string str(cast<StringLiteral>(args[0])->getVal());
       std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c){ return std::tolower(c); });
 
-      return new(TG) StringLiteral(TG.getStringTy(), str);
+      return new(TG) StringLiteral(TG.getStringTy(), move(str));
    }
    case Not: {
       EXPECT_NUM_ARGS(1);

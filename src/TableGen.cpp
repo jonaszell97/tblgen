@@ -49,19 +49,9 @@ static Value *resolveValue(Value *V,
    else if (auto DA = dyn_cast<DictAccessExpr>(V)) {
       auto dict = resolveValue(DA->getDict(), PreviousBase,
                                ConcreteTemplateArgs, errorLoc);
-//      if (!isa<DictLiteral>(dict))
-//         diag::err(diag::err_generic_error)
-//            << "value is not a dictionary"
-//            << errorLoc << diag::term;
 
       std::string key(DA->getKey());
-      auto val = cast<DictLiteral>(dict)->getValue(key);
-//      if (!val)
-//         diag::err(diag::err_generic_error)
-//            << "key does not exist in dictionary"
-//            << errorLoc << diag::term;
-
-      return val;
+      return cast<DictLiteral>(dict)->getValue(key);
    }
    else {
       return V;
@@ -77,10 +67,39 @@ static void resolveValues(Class::BaseClass const &Base,
    }
 }
 
-static Value *getOverride(Record &R, std::string_view FieldName)
+static Value *getOverride(const TableGen &TG, Record &R, std::string_view FieldName)
 {
    for (auto &Base : R.getBases()) {
       if (auto *OV = Base.getBase()->getOverride(FieldName)) {
+         if (OV->isAppend())
+         {
+            auto baseValue = Base.getBase()->getOwnField(FieldName);
+            auto *defaultVal = baseValue->getDefaultValue();
+
+            assert(defaultVal != nullptr && "no default value for overriden field");
+
+            if (auto *list = cast<ListLiteral>(defaultVal))
+            {
+               auto *listToAppend = cast<ListLiteral>(OV->getDefaultValue());
+               std::vector<Value*> vec(list->getValues());
+               vec.insert(vec.end(), listToAppend->getValues().begin(),
+                          listToAppend->getValues().end());
+
+               return new(TG) ListLiteral(list->getType(), move(vec));
+            }
+            else
+            {
+               auto *dict = cast<DictLiteral>(defaultVal);
+               auto *dictToAppend = cast<DictLiteral>(OV->getDefaultValue());
+
+               auto map = dict->getValues();
+               map.insert(dictToAppend->getValues().begin(),
+                          dictToAppend->getValues().end());
+
+               return new(TG) DictLiteral(dict->getType(), move(map));
+            }
+         }
+
          return OV->getDefaultValue();
       }
    }
@@ -89,7 +108,7 @@ static Value *getOverride(Record &R, std::string_view FieldName)
 }
 
 static RecordField const*
-implementBaseForRecord(Class::BaseClass const& Base,
+implementBaseForRecord(const TableGen &TG, Class::BaseClass const& Base,
                        Record &R,
                        const std::vector<Value *> &BaseTemplateArgs) {
    for (auto &Field : Base.getBase()->getFields()) {
@@ -97,7 +116,7 @@ implementBaseForRecord(Class::BaseClass const& Base,
       if (auto val = R.getOwnField(Field.getName())) {
          R.setFieldValue(fieldName, val->getDefaultValue());
       }
-      else if (auto Override = getOverride(R, Field.getName())) {
+      else if (auto Override = getOverride(TG, R, Field.getName())) {
          R.setFieldValue(fieldName, resolveValue(Override, Base,
                                                        BaseTemplateArgs,
                                                        Field.getDeclLoc()));
@@ -137,7 +156,7 @@ implementBaseForRecord(Class::BaseClass const& Base,
    for (auto &NextBase : Base.getBase()->getBases()) {
       resolveValues(NextBase, Base, BaseTemplateArgs, NextBaseTemplateArgs);
 
-      if (auto missing = implementBaseForRecord(NextBase, R,
+      if (auto missing = implementBaseForRecord(TG, NextBase, R,
                                                 NextBaseTemplateArgs)) {
          return missing;
       }
@@ -151,7 +170,7 @@ implementBaseForRecord(Class::BaseClass const& Base,
 TableGen::FinalizeResult TableGen::finalizeRecord(Record &R)
 {
    for (auto &Base : R.getBases()) {
-      if (auto missing = implementBaseForRecord(Base, R,
+      if (auto missing = implementBaseForRecord(*this, Base, R,
                                                 Base.getTemplateArgs())) {
          return {
             RFS_MissingFieldValue, std::string(missing->getName()),
@@ -162,7 +181,7 @@ TableGen::FinalizeResult TableGen::finalizeRecord(Record &R)
 
    auto name = R.hasField("name") ? "__name" : "name";
    R.addOwnField(SourceLocation(), name, getStringTy(),
-      new (*this) StringLiteral(getStringTy(), R.getName()));
+      new (*this) StringLiteral(getStringTy(), std::string(R.getName())));
 
    return { RFS_Success };
 }

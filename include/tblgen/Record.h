@@ -26,9 +26,11 @@ public:
                Type *type,
                Value *defaultValue,
                SourceLocation declLoc,
-               size_t associatedTemplateParm = size_t(-1))
+               size_t associatedTemplateParm = size_t(-1),
+               bool append = false)
       : name(name), type(type), defaultValue(defaultValue),
-        declLoc(declLoc), associatedTemplateParm(associatedTemplateParm)
+        declLoc(declLoc), associatedTemplateParm(associatedTemplateParm),
+        append(append)
    {}
 
    const std::string &getName() const
@@ -56,6 +58,8 @@ public:
       return associatedTemplateParm != -1;
    }
 
+   bool isAppend() const { return append; }
+
    size_t getAssociatedTemplateParm() const
    {
       assert(hasAssociatedTemplateParm());
@@ -72,6 +76,7 @@ private:
    SourceLocation declLoc;
 
    size_t associatedTemplateParm;
+   bool append;
 };
 
 class Class {
@@ -114,11 +119,12 @@ public:
    bool addOverride(std::string_view name,
                     Type *type,
                     Value *defaultValue,
-                    SourceLocation declLoc) {
+                    SourceLocation declLoc,
+                    bool append) {
       if (getOverride(name))
          return false;
 
-      overrides.emplace_back(name, type, defaultValue, declLoc, -1);
+      overrides.emplace_back(name, type, defaultValue, declLoc, -1, append);
       return true;
    }
 

@@ -113,7 +113,7 @@ Options parseOptions(DiagnosticsEngine &Diags, int argc, char **argv)
             opts.templateFile = argv[i];
             opts.backend = B_Template;
          }
-         else if (arg == "-help") {
+         else if (arg == "--help" || arg == "--version") {
             printHelpDialog(std::cout);
          }
          else {
@@ -125,7 +125,7 @@ Options parseOptions(DiagnosticsEngine &Diags, int argc, char **argv)
                       .Default(B_Custom);
 
             if (opts.backend == B_Custom) {
-               if (i++ == argc) {
+               if (++i >= argc) {
                   Diags.Diag(err_generic_error)
                       << "expecting shared library file name";
 

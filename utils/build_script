@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+
+import os
+import platform
+import shutil
+import subprocess
+import sys
+
+if platform.system() == 'Linux':
+    dylib_ext = "so"
+elif platform.system() == 'Darwin':
+    dylib_ext = "dylib"
+elif platform.system() == 'Windows':
+    dylib_ext = "dll"
+
+if platform.system() == 'Linux':
+    sys_bin_dir = "/usr/local/bin"
+    sys_lib_dir = "/usr/local/lib"
+elif platform.system() == 'Darwin':
+    sys_bin_dir = "/usr/local/bin"
+    sys_lib_dir = "/usr/local/lib"
+
+cpu_count = str(os.cpu_count())
+
+def find_executable(name):
+    return shutil.which(name)
+
+def require_executable(name):
+    cmd = shutil.which(name)
+    if cmd is None:
+        if platform.system() == 'Linux':
+            installer = "apt-get install"
+        elif platform.system() == 'Darwin':
+            installer = "brew install"
+
+        print("'%s' executable not found; try running '%s %s'" % (name, installer, name))
+
+    return cmd
+
+def parse_args():
+    opts = {
+        "clean": False,
+    }
+
+    for i in range(0, len(sys.argv)):
+        if i == 0:
+            continue
+
+        if sys.argv[i] == "--clean":
+            opts["clean"] = True
+        else:
+            print("unknown option '%s'" % (sys.argv[i]))
+
+    return opts
+
+def set_tblgen_dir():
+    tblgen = os.path.realpath(shutil.which("tblgen"))
+    os.environ["TblGen_DIR"] = tblgen + "/../cmake"
+
+def build_tblgen(cmake, build_dir):
+    subprocess.run([
+        cmake,
+        "--build", build_dir,
+        "--target", "tblgen",
+        "--", "-j", cpu_count,
+    ], check=True, cwd=build_dir)
+
+    try:
+        os.unlink(sys_bin_dir + "/tblgen")
+        os.unlink(bin_dir + "/tblgen")
+    except:
+        pass
+
+    subprocess.run([
+        "ln", "-s", build_dir + "/tblgen", bin_dir,
+    ])
+    subprocess.run([
+        "ln", "-s", build_dir + "/tblgen", sys_bin_dir,
+    ])
+
+def clean(inc_dir, build_dir, bin_dir):
+    try:
+        os.unlink(sys_bin_dir + "/tblgen")
+    except:
+        pass
+    try:
+        os.rmdir(build_dir)
+    except:
+        pass
+    try:
+        os.rmdir(bin_dir)
+    except:
+        pass
+
+def main():
+    opts = parse_args()
+
+    # Verify that the platform is supported.
+    if platform.system() != 'Linux' and platform.system() != 'Darwin':
+        print("unsupported platform: %s" % (platform.system()))
+        return 1
+
+    # Get the current working directory.
+    cwd = os.getcwd()
+    src_dir = os.path.realpath(cwd + "/../src/")
+    inc_dir = os.path.realpath(cwd + "/../include/tblgen")
+
+    if not os.path.exists(src_dir):
+        print("invalid build directory structure: no 'src' directory")
+        return 1
+
+    if not os.path.exists(inc_dir):
+        print("invalid build directory structure: no 'include' directory")
+        return 1
+
+    bin_dir = os.path.realpath(cwd + "/../bin")
+    os.makedirs(bin_dir, exist_ok=True)
+
+    # Create a temporary build directory.
+    build_dir = os.path.realpath(cwd + "/../.build")
+
+    # Clean the build artifacts.
+    if opts["clean"]:
+        clean(inc_dir, build_dir, bin_dir)
+        return 0
+
+    os.makedirs(build_dir, exist_ok=True)
+
+    # Find clang or gcc
+    cxx = find_executable("clang++")
+    if cxx is None:
+        cxx = require_executable("g++")
+
+    # Find CMake
+    cmake = require_executable("cmake")
+    if not os.path.isfile(build_dir + "/CMakeCache.txt"):
+        try:
+            subprocess.run([
+                cmake,
+                os.path.realpath(build_dir + "/.."),
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DCMAKE_CXX_COMPILER=" + cxx,
+            ], check=True, cwd=build_dir)
+        except:
+            return 1
+
+    # Build TblGen
+    try:
+        build_tblgen(cmake, build_dir)
+    except subprocess.CalledProcessError as err:
+        print(err)
+        return 1
+
+    # Make sure TblGen_DIR is set
+    set_tblgen_dir()
+
+    return 0
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit(1)

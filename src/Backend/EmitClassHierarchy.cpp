@@ -6,7 +6,7 @@
 #include "tblgen/Support/Casting.h"
 #include "tblgen/Value.h"
 
-#include <ostream>
+#include <iostream>
 
 using namespace tblgen::diag;
 using namespace tblgen::support;
