@@ -84,11 +84,11 @@ def clean(inc_dir, build_dir, bin_dir):
     except:
         pass
     try:
-        os.rmdir(build_dir)
+        shutil.rmtree(build_dir)
     except:
         pass
     try:
-        os.rmdir(bin_dir)
+        shutil.rmtree(bin_dir)
     except:
         pass
 
