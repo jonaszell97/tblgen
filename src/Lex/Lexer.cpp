@@ -6,8 +6,8 @@
 #include "tblgen/Message/DiagnosticsEngine.h"
 
 #include <cassert>
+#include <cctype>
 #include <iostream>
-#include <regex>
 
 using std::string;
 using tblgen::lex::Token;
@@ -880,7 +880,7 @@ Token Lexer::lexCharLiteral()
          ++CurPtr;
 
          for (int i = 0; i < 2; ++i) {
-            if (!ishexnumber(*CurPtr++)) {
+            if (!isxdigit(*CurPtr++)) {
                Diags.Diag(err_generic_error)
                   << "expected hexadecimal digit"
                   << SourceLocation(currentIndex() + offset);
@@ -891,7 +891,7 @@ Token Lexer::lexCharLiteral()
          ++CurPtr;
 
          for (int i = 0; i < 4; ++i) {
-            if (!ishexnumber(*CurPtr++)) {
+            if (!isxdigit(*CurPtr++)) {
                Diags.Diag(err_generic_error)
                   << "expected hexadecimal digit"
                   << SourceLocation(currentIndex() + offset);
