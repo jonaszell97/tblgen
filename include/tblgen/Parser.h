@@ -8,6 +8,7 @@
 #include "tblgen/TableGen.h"
 
 #include <array>
+#include <cstring>
 #include <sstream>
 
 namespace tblgen {
