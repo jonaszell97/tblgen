@@ -5,6 +5,7 @@
 #include "tblgen/Lex/TokenKinds.h"
 #include "tblgen/Support/Allocator.h"
 
+#include <cstring>
 #include <string>
 #include <unordered_map>
 
