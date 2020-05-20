@@ -66,17 +66,20 @@ def build_tblgen(cmake, build_dir, bin_dir):
     ], check=True, cwd=build_dir)
 
     try:
-        os.unlink(sys_bin_dir + "/tblgen")
         os.unlink(bin_dir + "/tblgen")
+        subprocess.run([
+            "ln", "-s", build_dir + "/tblgen", bin_dir,
+        ])
     except:
         pass
 
-    subprocess.run([
-        "ln", "-s", build_dir + "/tblgen", bin_dir,
-    ])
-    subprocess.run([
-        "ln", "-s", build_dir + "/tblgen", sys_bin_dir,
-    ])
+    try:
+        os.unlink(sys_bin_dir + "/tblgen")
+        subprocess.run([
+            "ln", "-s", build_dir + "/tblgen", sys_bin_dir,
+        ])
+    except:
+        pass
 
     return build_dir + "/tblgen"
 
