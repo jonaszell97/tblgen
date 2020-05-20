@@ -57,7 +57,7 @@ def set_tblgen_dir():
     tblgen = os.path.realpath(shutil.which("tblgen"))
     os.environ["TblGen_DIR"] = tblgen + "/../cmake"
 
-def build_tblgen(cmake, build_dir):
+def build_tblgen(cmake, build_dir, bin_dir):
     subprocess.run([
         cmake,
         "--build", build_dir,
@@ -146,7 +146,7 @@ def main():
 
     # Build TblGen
     try:
-        build_tblgen(cmake, build_dir)
+        build_tblgen(cmake, build_dir, bin_dir)
     except subprocess.CalledProcessError as err:
         print(err)
         return 1
