@@ -31,3 +31,4 @@ set(SOURCE_FILES include/tblgen/Parser.h
         include/tblgen/Support/Allocator.h include/tblgen/Support/Optional.h src/TemplateParser.cpp)
 
 add_executable(tblgen main.cpp ${SOURCE_FILES})
+target_link_libraries(tblgen PUBLIC dl)
