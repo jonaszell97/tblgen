@@ -53,9 +53,9 @@ def parse_args():
 
     return opts
 
-def set_tblgen_dir():
-    tblgen = os.path.realpath(shutil.which("tblgen"))
-    os.environ["TblGen_DIR"] = tblgen + "/../cmake"
+def set_tblgen_dir(tblgen):
+    tblgen = os.path.realpath(str(shutil.which("tblgen")))
+    os.environ["TblGen_DIR"] = os.path.realpath(os.path.dirname(os.path.realpath(tblgen)) + "/../cmake")
 
 def build_tblgen(cmake, build_dir, bin_dir):
     subprocess.run([
@@ -77,6 +77,8 @@ def build_tblgen(cmake, build_dir, bin_dir):
     subprocess.run([
         "ln", "-s", build_dir + "/tblgen", sys_bin_dir,
     ])
+
+    return build_dir + "/tblgen"
 
 def clean(inc_dir, build_dir, bin_dir):
     try:
@@ -145,14 +147,15 @@ def main():
             return 1
 
     # Build TblGen
+    tblgen = ""
     try:
-        build_tblgen(cmake, build_dir, bin_dir)
+        tblgen = build_tblgen(cmake, build_dir, bin_dir)
     except subprocess.CalledProcessError as err:
         print(err)
         return 1
 
     # Make sure TblGen_DIR is set
-    set_tblgen_dir()
+    set_tblgen_dir(tblgen)
 
     return 0
 
