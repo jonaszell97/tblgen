@@ -38,7 +38,7 @@ public:
    bool isStr(const char (&Str)[StrLen]) const
    {
       return getLength() == StrLen - 1
-             && ::memcmp(getNameStart(), Str, StrLen - 1) == 0;
+             && memcmp(getNameStart(), Str, StrLen - 1) == 0;
    }
 
    unsigned getLength() const

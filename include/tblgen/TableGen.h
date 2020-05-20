@@ -7,6 +7,7 @@
 #include "tblgen/Support/Allocator.h"
 #include "tblgen/Type.h"
 
+#include <memory>
 #include <unordered_map>
 
 #define unreachable(MSG) assert(false && MSG); __builtin_unreachable()

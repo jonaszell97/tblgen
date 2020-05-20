@@ -3,6 +3,7 @@
 #define TABLEGEN_OPTIONAL_H
 
 #include <cstddef>
+#include <type_traits>
 
 namespace tblgen::support
 {

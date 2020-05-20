@@ -92,8 +92,6 @@ public:
 
       bool IsMacroExpansion : 1;
       bool IsMixin          : 1;
-
-      std::unordered_map<std::string, CachedFile>::iterator IncludedFrom;
    };
 
    const std::unordered_map<std::string, CachedFile> &getSourceFiles() const
