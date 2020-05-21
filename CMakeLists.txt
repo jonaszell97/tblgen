@@ -5,7 +5,7 @@ project(TableGen)
 # set CXX flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++17 -pedantic -fno-exceptions -fno-rtti")
 if(UNIX AND NOT APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare -lstdc++fs")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
 endif()
 
 # add include directories

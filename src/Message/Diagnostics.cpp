@@ -269,6 +269,9 @@ static SeverityLevel getSeverity(MessageKind msg)
 #  define TBLGEN_ERROR(Name, Msg, IsFatal)                                     \
    case Name: return IsFatal ? SeverityLevel::Fatal : SeverityLevel::Error;
 #  include "tblgen/Message/def/Diagnostics.def"
+    default:
+        assert(false && "bad diagnostic kind");
+        return SeverityLevel::Note;
    }
 }
 

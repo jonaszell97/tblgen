@@ -193,22 +193,18 @@ uint64_t Token::getIntegerValue() const
    assert(kind == tok::integerliteral);
 
    auto txt = getText();
-   uint8_t base = 10;
    unsigned offset = 0;
 
    if (txt[0] == '0') {
       if (txt.size() > 1) {
          if (txt[1] == 'x' || txt[1] == 'X') {
             offset = 2;
-            base = 16;
          }
          else if (txt[1] == 'b' || txt[1] == 'B') {
             offset = 2;
-            base = 2;
          }
          else {
             offset = 1;
-            base = 8;
          }
       }
    }

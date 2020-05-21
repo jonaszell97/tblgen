@@ -9,12 +9,6 @@
 namespace tblgen {
 namespace fs {
 
-#ifdef _WIN32
-   static char PathSeperator = '\\';
-#else
-   static char PathSeperator = '/';
-#endif
-
 std::string_view getPath(std::string_view fullPath);
 std::string_view getFileName(std::string_view fullPath);
 std::string_view getExtension(std::string_view fullPath);
