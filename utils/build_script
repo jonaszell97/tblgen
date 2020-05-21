@@ -134,7 +134,7 @@ def main():
     os.makedirs(build_dir, exist_ok=True)
 
     # Find clang or gcc
-    cxx = find_executable(cxx)
+    cxx_exec = find_executable(cxx)
 
     # Find CMake
     cmake = require_executable("cmake")
@@ -144,7 +144,7 @@ def main():
                 cmake,
                 os.path.realpath(build_dir + "/.."),
                 "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_CXX_COMPILER=" + cxx,
+                "-DCMAKE_CXX_COMPILER=" + cxx_exec,
             ], check=True, cwd=build_dir)
         except:
             return 1
