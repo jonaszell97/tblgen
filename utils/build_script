@@ -50,6 +50,12 @@ def parse_args():
 
         if sys.argv[i] == "--clean":
             opts["clean"] = True
+        elif arg == "--use-cxx":
+            if i == len(sys.argv) - 1:
+                print("expected path after --use-cxx")
+            else:
+                cxx = sys.argv[i + 1]
+                skip = True
         else:
             print("unknown option '%s'" % (sys.argv[i]))
 

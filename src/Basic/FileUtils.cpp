@@ -13,7 +13,7 @@ namespace fs {
 std::string_view getPath(std::string_view fullPath)
 {
    auto period = fullPath.rfind('.');
-   auto slash = fullPath.rfind(PathSeperator);
+   auto slash = fullPath.rfind(PathSeparator);
 
    if (period == string::npos || (period < slash && slash != string::npos)) {
       return fullPath;
@@ -29,7 +29,7 @@ std::string_view getPath(std::string_view fullPath)
 std::string_view getFileName(std::string_view fullPath)
 {
    auto period = fullPath.rfind('.');
-   auto slash = fullPath.rfind(PathSeperator);
+   auto slash = fullPath.rfind(PathSeparator);
 
    if (period == string::npos || period < slash)
       return fullPath.substr(slash == string::npos ? 1 : slash + 1);
@@ -43,7 +43,7 @@ std::string_view getFileName(std::string_view fullPath)
 std::string_view getExtension(std::string_view fullPath)
 {
    auto period = fullPath.rfind('.');
-   auto slash = fullPath.rfind(PathSeperator);
+   auto slash = fullPath.rfind(PathSeparator);
 
    if (period == string::npos)
       return "";
@@ -57,7 +57,7 @@ std::string_view getExtension(std::string_view fullPath)
 std::string_view getFileNameAndExtension(std::string_view fullPath)
 {
    auto period = fullPath.rfind('.');
-   auto slash = fullPath.rfind(PathSeperator);
+   auto slash = fullPath.rfind(PathSeparator);
 
    if (period == string::npos)
       return "";
@@ -90,7 +90,7 @@ bool fileExists(std::string_view name)
 
 string findFileInDirectories(std::string_view fileName,
                              const std::vector<std::string> &directories) {
-   if (fileName.front() == fs::PathSeperator) {
+   if (fileName.front() == fs::PathSeparator) {
       if (fileExists(fileName))
          return std::string(fileName);
 
@@ -104,8 +104,8 @@ string findFileInDirectories(std::string_view fileName,
 
    for (std::string dirName : directories) {
       if (!Path.empty()) {
-         if (dirName.back() != fs::PathSeperator) {
-            dirName += fs::PathSeperator;
+         if (dirName.back() != fs::PathSeparator) {
+            dirName += fs::PathSeparator;
          }
 
          dirName += Path;

@@ -1877,6 +1877,7 @@ Value* Parser::parseFunction(Type *contextualTy)
 
       bool result = false;
       for (auto[key, value] : dict->getValues()) {
+          (void)value;
          if (key == searchKey) {
             result = true;
             break;

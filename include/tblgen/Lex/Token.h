@@ -180,7 +180,7 @@ struct Token {
    }
 
 private:
-   tok::TokenType kind : 8;
+   tok::TokenType kind;
    SourceLocation loc;
 
    unsigned Data;
