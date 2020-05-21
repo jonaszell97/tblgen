@@ -57,7 +57,7 @@ def parse_args():
             if i == len(sys.argv) - 1:
                 print("expected path after --use-cxx")
             else:
-                cxx = sys.argv[i + 1]
+                opts["cxx"] = sys.argv[i + 1]
                 skip = True
         else:
             print("unknown option '%s'" % (sys.argv[i]))
@@ -143,9 +143,10 @@ def main():
     os.makedirs(build_dir, exist_ok=True)
 
     # Find clang or gcc
-    cxx_exec = find_executable(cxx)
-    print("CXX: " + cxx)
-    print("CXX: " + cxx_exec)
+    if "cxx" in opts:
+        cxx_exec = opts["cxx"]
+    else:
+        cxx_exec = find_executable(cxx)
 
     # Find CMake
     cmake = require_executable("cmake")
