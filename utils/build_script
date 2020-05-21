@@ -144,6 +144,8 @@ def main():
 
     # Find clang or gcc
     cxx_exec = find_executable(cxx)
+    print("CXX: " + cxx)
+    print("CXX: " + cxx_exec)
 
     # Find CMake
     cmake = require_executable("cmake")
