@@ -16,9 +16,11 @@ elif platform.system() == 'Windows':
 if platform.system() == 'Linux':
     sys_bin_dir = "/usr/local/bin"
     sys_lib_dir = "/usr/local/lib"
+    cxx = "g++"
 elif platform.system() == 'Darwin':
     sys_bin_dir = "/usr/local/bin"
     sys_lib_dir = "/usr/local/lib"
+    cxx = "clang++"
 
 cpu_count = str(os.cpu_count())
 
@@ -132,9 +134,7 @@ def main():
     os.makedirs(build_dir, exist_ok=True)
 
     # Find clang or gcc
-    cxx = find_executable("clang++")
-    if cxx is None:
-        cxx = require_executable("g++")
+    cxx = find_executable(cxx)
 
     # Find CMake
     cmake = require_executable("cmake")
