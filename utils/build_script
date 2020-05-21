@@ -44,11 +44,14 @@ def parse_args():
         "clean": False,
     }
 
+    skip = False
     for i in range(0, len(sys.argv)):
-        if i == 0:
+        if i == 0 or skip:
+            skip = False
             continue
 
-        if sys.argv[i] == "--clean":
+        arg = sys.argv[i]
+        if arg == "--clean":
             opts["clean"] = True
         elif arg == "--use-cxx":
             if i == len(sys.argv) - 1:
