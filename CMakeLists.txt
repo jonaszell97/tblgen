@@ -3,13 +3,13 @@ cmake_minimum_required(VERSION 3.7)
 project(TableGen)
 
 # set CXX flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++17 -pedantic -fno-exceptions -fno-rtti")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++17 -pedantic")
 if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare -stdlib=libc++")
 endif()
 
 if(UNIX AND NOT APPLE)
-    set(linker_flags "-fuse-ld=/usr/bin/ld.lld-10 -stdlib=libc++ -Wl,--start-group -fno-exceptions -fno-rtti")
+    set(linker_flags "-fuse-ld=/usr/bin/ld.lld-10 -stdlib=libc++ -Wl,--start-group")
 else()
     set(linker_flags "")
 endif()
@@ -38,4 +38,4 @@ set(SOURCE_FILES include/tblgen/Parser.h
         include/tblgen/Support/Allocator.h include/tblgen/Support/Optional.h src/TemplateParser.cpp)
 
 add_executable(tblgen main.cpp ${SOURCE_FILES})
-target_link_libraries(tblgen PUBLIC dl ${linker_flags})
+target_link_libraries(tblgen PUBLIC dl ${linker_flags} -fvisibility=hidden)
