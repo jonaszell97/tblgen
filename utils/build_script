@@ -42,6 +42,7 @@ def require_executable(name):
 def parse_args():
     opts = {
         "clean": False,
+        "build_type": "Release",
     }
 
     skip = False
@@ -53,6 +54,10 @@ def parse_args():
         arg = sys.argv[i]
         if arg == "--clean":
             opts["clean"] = True
+        elif arg == "--release":
+            opts["build_type"] = "Release"
+        elif arg == "--debug":
+            opts["build_type"] = "Debug"
         elif arg == "--use-cxx":
             if i == len(sys.argv) - 1:
                 print("expected path after --use-cxx")
@@ -155,7 +160,7 @@ def main():
             subprocess.run([
                 cmake,
                 os.path.realpath(build_dir + "/.."),
-                "-DCMAKE_BUILD_TYPE=Release",
+                "-DCMAKE_BUILD_TYPE=" + opts["build_type"],
                 "-DCMAKE_CXX_COMPILER=" + cxx_exec,
             ], check=True, cwd=build_dir)
         except:
