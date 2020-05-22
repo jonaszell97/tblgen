@@ -44,6 +44,7 @@ def parse_args():
         "clean": False,
         "build_type": "Release",
         "cmake_flags": [],
+        "verbose": False,
     }
 
     skip = False
@@ -61,6 +62,7 @@ def parse_args():
             opts["build_type"] = "Debug"
         elif arg == "--verbose":
             opts["cmake_flags"].append("-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON")
+            opts["verbose"] = True
         elif arg == "--use-cxx":
             if i == len(sys.argv) - 1:
                 print("expected path after --use-cxx")
@@ -72,12 +74,20 @@ def parse_args():
 
     return opts
 
+
+def run_subprocess(opts, args, *, stdout=None, stderr=None, cwd=None, check=False):
+    if opts["verbose"]:
+        print(*args, sep=" ", end="\n", file=sys.stderr)
+
+    subprocess.run(args, stdout=stdout, stderr=stderr,
+                   cwd=cwd, check=check)
+
 def set_tblgen_dir(tblgen):
     tblgen = os.path.realpath(str(shutil.which("tblgen")))
     os.environ["TblGen_DIR"] = os.path.realpath(os.path.dirname(os.path.realpath(tblgen)) + "/../cmake")
 
-def build_tblgen(cmake, build_dir, bin_dir):
-    subprocess.run([
+def build_tblgen(opts, cmake, build_dir, bin_dir):
+    run_subprocess(opts, [
         cmake,
         "--build", build_dir,
         "--target", "tblgen",
@@ -86,7 +96,7 @@ def build_tblgen(cmake, build_dir, bin_dir):
 
     try:
         os.unlink(bin_dir + "/tblgen")
-        subprocess.run([
+        run_subprocess(opts, [
             "ln", "-s", build_dir + "/tblgen", bin_dir,
         ])
     except:
@@ -94,7 +104,7 @@ def build_tblgen(cmake, build_dir, bin_dir):
 
     try:
         os.unlink(sys_bin_dir + "/tblgen")
-        subprocess.run([
+        run_subprocess(opts, [
             "ln", "-s", build_dir + "/tblgen", sys_bin_dir,
         ])
     except:
@@ -160,7 +170,7 @@ def main():
     cmake = require_executable("cmake")
     if not os.path.isfile(build_dir + "/CMakeCache.txt"):
         try:
-            subprocess.run([
+            run_subprocess(opts, [
                 cmake,
                 os.path.realpath(build_dir + "/.."),
                 "-DCMAKE_BUILD_TYPE=" + opts["build_type"],
@@ -173,7 +183,7 @@ def main():
     # Build TblGen
     tblgen = ""
     try:
-        tblgen = build_tblgen(cmake, build_dir, bin_dir)
+        tblgen = build_tblgen(opts, cmake, build_dir, bin_dir)
     except subprocess.CalledProcessError as err:
         print(err)
         return 1
