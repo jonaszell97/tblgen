@@ -9,7 +9,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 if(UNIX AND NOT APPLE)
-    set(linker_flags "-fuse-ld=/usr/bin/ld.lld-10 -Wl,--start-group")
+    set(linker_flags "-fuse-ld=/usr/bin/ld.lld-10 -stdlib=libstdc++ -Wl,--start-group -fno-exceptions -fno-rtti")
 else()
     set(linker_flags "")
 endif()
