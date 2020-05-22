@@ -43,6 +43,7 @@ def parse_args():
     opts = {
         "clean": False,
         "build_type": "Release",
+        "cmake_flags": [],
     }
 
     skip = False
@@ -58,6 +59,8 @@ def parse_args():
             opts["build_type"] = "Release"
         elif arg == "--debug":
             opts["build_type"] = "Debug"
+        elif arg == "--verbose":
+            opts["cmake_flags"].append("-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON")
         elif arg == "--use-cxx":
             if i == len(sys.argv) - 1:
                 print("expected path after --use-cxx")
@@ -162,6 +165,7 @@ def main():
                 os.path.realpath(build_dir + "/.."),
                 "-DCMAKE_BUILD_TYPE=" + opts["build_type"],
                 "-DCMAKE_CXX_COMPILER=" + cxx_exec,
+                *opts["cmake_flags"],
             ], check=True, cwd=build_dir)
         except:
             return 1
