@@ -8,6 +8,12 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
 endif()
 
+if(UNIX AND NOT APPLE)
+    set(linker_flags "-fuse-ld=/usr/bin/ld.lld-10 -Wl,--start-group")
+else()
+    set(linker_flags "")
+endif()
+
 # add include directories
 include_directories("include")
 
@@ -32,4 +38,4 @@ set(SOURCE_FILES include/tblgen/Parser.h
         include/tblgen/Support/Allocator.h include/tblgen/Support/Optional.h src/TemplateParser.cpp)
 
 add_executable(tblgen main.cpp ${SOURCE_FILES})
-target_link_libraries(tblgen PUBLIC dl)
+target_link_libraries(tblgen PUBLIC dl ${linker_flags})
