@@ -5,11 +5,11 @@ project(TableGen)
 # set CXX flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++17 -pedantic")
 if(UNIX AND NOT APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare -stdlib=libc++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
 endif()
 
 if(UNIX AND NOT APPLE)
-    set(linker_flags "-fuse-ld=/usr/bin/ld.lld-10 -stdlib=libc++ -Wl,--start-group")
+    set(linker_flags "-fuse-ld=/usr/bin/ld.lld-10 -Wl,--start-group")
 else()
     set(linker_flags "")
 endif()
