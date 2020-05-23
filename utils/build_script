@@ -78,6 +78,7 @@ def parse_args():
 def run_subprocess(opts, args, *, stdout=None, stderr=None, cwd=None, check=False):
     if opts["verbose"]:
         print(*args, sep=" ", end="\n", file=sys.stderr)
+        sys.stderr.flush()
 
     subprocess.run(args, stdout=stdout, stderr=stderr,
                    cwd=cwd, check=check)
