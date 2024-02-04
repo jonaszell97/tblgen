@@ -28,6 +28,7 @@ public:
       IdentifierValID,
       RecordValID,
       EnumValID,
+      UndefValID,
 
       DictAccessExprID,
    };
@@ -205,6 +206,16 @@ public:
 
 private:
    std::string Val;
+};
+
+class UndefValue: public Value {
+public:
+   explicit UndefValue(Type *Ty)
+      : Value(UndefValID, Ty)
+   { }
+
+   static bool classof(Value const* V)
+   { return V->getTypeID() == UndefValID;}
 };
 
 class RecordVal: public Value {

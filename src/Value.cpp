@@ -98,6 +98,9 @@ std::ostream &operator<<(std::ostream &str, Value const* V)
    else if (auto EV = dyn_cast<EnumVal>(V)) {
       str << EV->getCase()->caseName;
    }
+   else if (auto UD = dyn_cast<UndefValue>(V)) {
+      str << "undef";
+   }
    else {
       unreachable("unhandled value kind");
    }

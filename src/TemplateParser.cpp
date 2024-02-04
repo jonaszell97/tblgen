@@ -28,8 +28,9 @@ TemplateParser::TemplateParser(tblgen::TableGen &TG, const std::string &Buf,
 }
 
 TemplateParser::TemplateParser(tblgen::TableGen &TG, const std::vector<Token> &Toks,
-                               unsigned sourceId, unsigned baseOffset)
-   : Parser(TG, Toks, sourceId, baseOffset)
+                               unsigned sourceId, unsigned baseOffset,
+                               const std::unordered_map<std::string, Macro> &macros)
+   : Parser(TG, Toks, sourceId, baseOffset), macros(macros)
 {
    ActiveOS = &OS;
 }
@@ -349,6 +350,24 @@ Value* TemplateParser::handleCommand(bool paste, bool &explicitStr,
          cast<RecordVal>(args.front())->getRecord()->getName());
    }
 
+   if (cmd->isStr("case_name")) {
+      EXPECT_NUM_ARGS(1)
+      EXPECT_ARG_VALUE(0, EnumVal)
+
+      return new(TG) IdentifierVal(
+         TG.getStringTy(),
+         cast<EnumVal>(args.front())->getCase()->caseName);
+   }
+
+   if (cmd->isStr("case_value")) {
+      EXPECT_NUM_ARGS(1)
+      EXPECT_ARG_VALUE(0, EnumVal)
+
+      return new(TG) IntegerLiteral(
+         TG.getInt64Ty(),
+         cast<EnumVal>(args.front())->getCase()->caseValue);
+   }
+
    TG.Diags.Diag(err_generic_error)
       << "unknown command '" + cmd->getIdentifier() + "'"
       << lex.getSourceLoc();
@@ -450,16 +469,20 @@ Value* TemplateParser::handleForeach(bool paste)
    advance();
    advance();
 
+   bool force = true;
+
    auto *iterator = parseExpr();
    std::vector<Value*> values;
 
    if (type == ForEachType::Record) {
       if (!isa<StringLiteral>(iterator)) {
-         TG.Diags.Diag(err_generic_error)
+         if (!force) {
+            TG.Diags.Diag(err_generic_error)
             << "for_each_record expects a string literal"
             << lex.getSourceLoc();
 
-         abortBP();
+            abortBP();
+         }
       }
 
       std::vector<Record*> records;
@@ -471,14 +494,20 @@ Value* TemplateParser::handleForeach(bool paste)
    }
    else {
       if (!isa<ListLiteral>(iterator)) {
-         TG.Diags.Diag(err_generic_error)
-            << "for_each expects an iterator of list type"
-            << lex.getSourceLoc();
-
-         abortBP();
+         if (!force) {
+            TG.Diags.Diag(err_generic_error)
+               << "for_each expects an iterator of list type"
+               << lex.getSourceLoc();
+               
+            abortBP();
+         }
+         else {
+            values = std::vector<Value*>();
+         }
       }
-
-      values = cast<ListLiteral>(iterator)->getValues();
+      else {
+         values = cast<ListLiteral>(iterator)->getValues();
+      }
    }
 
    if (!peek().isIdentifier("as")) {
@@ -691,7 +720,7 @@ Value* TemplateParser::handleInvoke(bool paste)
 
    advance();
 
-   TemplateParser parser(TG, macro.tokens, this->lex.getSourceId(), this->lex.getOffset());
+   TemplateParser parser(TG, macro.tokens, this->lex.getSourceId(), this->lex.getOffset(), macros);
    for (int i = 0; i < macro.params.size(); ++i)
    {
       parser.ForEachVals[macro.params[i]] = args[i];

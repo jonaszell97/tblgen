@@ -1153,6 +1153,9 @@ Value* Parser::parseExpr(Type *contextualTy)
          bitwidth = IntTy->getBitWidth();
          isSigned = !IntTy->isUnsigned();
       }
+      else {
+         contextualTy = TG.getInt64Ty();
+      }
 
       LiteralParser LParser(currentTok().getText());
 
@@ -1642,8 +1645,17 @@ Value* Parser::parseFunction(Type *contextualTy)
       ContainsKey,
       StrConcat,
       Upper, Lower,
+      ToString,
+
+      RecordName,
+      ClassName,
+      CaseName,
+      CaseValue,
+      AccessField,
 
       Eq, Ne, Gt, Lt, Ge, Le,
+      Add, Sub, Mul, Div,
+
       Empty, Not,
    };
 
@@ -1658,6 +1670,7 @@ Value* Parser::parseFunction(Type *contextualTy)
       .Case("contains", Contains)
       .Case("contains_key", ContainsKey)
       .Case("str_concat", StrConcat)
+      .Case("to_string", ToString)
       .Case("upper", Upper)
       .Case("lower", Lower)
       .Case("eq", Eq)
@@ -1668,6 +1681,15 @@ Value* Parser::parseFunction(Type *contextualTy)
       .Case("lt", Lt)
       .Case("ge", Ge)
       .Case("le", Le)
+      .Case("add", Add)
+      .Case("sub", Sub)
+      .Case("mul", Mul)
+      .Case("div", Div)
+      .Case("record_name", RecordName)
+      .Case("class_name", ClassName)
+      .Case("case_name", CaseName)
+      .Case("case_value", CaseValue)
+      .Case("access_field", AccessField)
       .Default(Unknown);
 
    expect(tok::open_paren);
@@ -1930,6 +1952,17 @@ Value* Parser::parseFunction(Type *contextualTy)
 
       return new(TG) StringLiteral(args.front()->getType(), move(str));
    }
+   case ToString: {
+      if (args.empty()) {
+         TG.Diags.Diag(err_generic_error)
+            << "function " + func + " expects exactly one argument";
+      }
+
+      std::ostringstream OS;
+      OS << args[0];
+
+      return new(TG) StringLiteral(TG.getStringTy(), OS.str()); 
+   }
    case Upper: {
       EXPECT_NUM_ARGS(1);
       EXPECT_ARG_VALUE(0, StringLiteral);
@@ -2056,6 +2089,126 @@ Value* Parser::parseFunction(Type *contextualTy)
 
       return new(TG) IntegerLiteral(TG.getInt1Ty(), (uint64_t)Result);
    }
+   case Add: case Sub: case Mul: case Div: {
+      EXPECT_NUM_ARGS(2);
+
+      Value *LHS = args[0];
+      Value *RHS = args[1];
+
+      if (LHS->getTypeID() == RHS->getTypeID()) {
+         switch (LHS->getTypeID()) {
+         case Value::IntegerLiteralID: {
+            uint64_t Result;
+            switch (kind)
+            {
+            case Add:
+               Result = cast<IntegerLiteral>(LHS)->getVal()
+                        + cast<IntegerLiteral>(RHS)->getVal();
+               break;
+            case Sub:
+               Result = cast<IntegerLiteral>(LHS)->getVal()
+                        - cast<IntegerLiteral>(RHS)->getVal();
+               break;
+            case Mul:
+               Result = cast<IntegerLiteral>(LHS)->getVal()
+                        * cast<IntegerLiteral>(RHS)->getVal();
+               break;
+            case Div:
+            default:
+               Result = cast<IntegerLiteral>(LHS)->getVal()
+                        / cast<IntegerLiteral>(RHS)->getVal();
+               break;
+            }
+
+            return new(TG) IntegerLiteral(cast<IntegerLiteral>(LHS)->getType(), Result);
+         }
+         case Value::FPLiteralID:
+            double Result;
+            switch (kind)
+            {
+            case Add:
+               Result = cast<FPLiteral>(LHS)->getVal()
+                        + cast<FPLiteral>(RHS)->getVal();
+               break;
+            case Sub:
+               Result = cast<FPLiteral>(LHS)->getVal()
+                        - cast<FPLiteral>(RHS)->getVal();
+               break;
+            case Mul:
+               Result = cast<FPLiteral>(LHS)->getVal()
+                        * cast<FPLiteral>(RHS)->getVal();
+               break;
+            case Div:
+            default:
+               Result = cast<FPLiteral>(LHS)->getVal()
+                        / cast<FPLiteral>(RHS)->getVal();
+               break;
+            }
+
+            return new(TG) FPLiteral(cast<FPLiteral>(LHS)->getType(), Result);
+         default:
+            break;
+         }
+      }
+
+      TG.Diags.Diag(err_generic_error) << "invalid operands for arithmetic function";
+   }
+   case RecordName:
+      EXPECT_NUM_ARGS(1);
+      if (!isa<RecordVal>(args[0])) {
+         return TG.getUndef();
+      }
+
+      return new(TG) StringLiteral(TG.getStringTy(), std::string(cast<RecordVal>(args[0])->getRecord()->getName()));
+   case ClassName: {
+      EXPECT_NUM_ARGS(1);
+      if (!isa<RecordVal>(args[0])) {
+         return TG.getUndef();
+      }
+
+      auto &bases = cast<RecordVal>(args[0])->getRecord()->getBases();
+      if (bases.size() != 1) {
+         TG.Diags.Diag(err_generic_error)
+            << "record " + cast<RecordVal>(args[0])->getRecord()->getName() + " does not have a unique base class";
+      }
+
+      return new(TG) StringLiteral(TG.getStringTy(), std::string(bases[0].getBase()->getName()));
+   }
+   case CaseName:
+      EXPECT_NUM_ARGS(1);
+      if (!isa<EnumVal>(args[0])) {
+         return TG.getUndef();
+      }
+
+      return new(TG) StringLiteral(TG.getStringTy(), std::string(cast<EnumVal>(args[0])->getCase()->caseName));
+   case CaseValue:
+      EXPECT_NUM_ARGS(1);
+      if (!isa<EnumVal>(args[0])) {
+         return TG.getUndef();
+      }
+
+      return new(TG) IntegerLiteral(TG.getInt64Ty(), cast<EnumVal>(args[0])->getCase()->caseValue);
+   case AccessField: {
+      EXPECT_NUM_ARGS(2);
+      EXPECT_ARG_VALUE(1, StringLiteral);
+
+      if (!isa<RecordVal>(args[0])) {
+         return TG.getUndef();
+      }
+
+      auto *R = cast<RecordVal>(args[0])->getRecord();
+      auto fieldName = cast<StringLiteral>(args[1])->getVal();
+
+      if (!R->hasField(fieldName)) {
+         if (args.size() > 2) {
+            return args[2];
+         }
+
+         return TG.getUndef();
+      }
+
+      return R->getFieldValue(fieldName);
+   }
    }
 
    unreachable("unhandled function kind");
@@ -2074,6 +2227,12 @@ void Parser::parseTemplateArgs(std::vector<Value *> &args,
    size_t idx = 0;
    while (!currentTok().is(tok::greater)) {
       locs.push_back(currentTok().getSourceLoc());
+
+      // Allow named arguments.
+      if (currentTok().is_identifier() && peek().is(tok::equals)) {
+         advance();
+         advance();
+      }
 
       if (idx < forClass->getParameters().size()) {
          args.push_back(parseExpr(forClass->getParameters()[idx].getType()));

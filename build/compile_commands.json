@@ -1,0 +1,97 @@
+[
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/main.cpp.o -c /Users/jonaszell/tblgen/main.cpp",
+  "file": "/Users/jonaszell/tblgen/main.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Parser.cpp.o -c /Users/jonaszell/tblgen/src/Parser.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Parser.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Record.cpp.o -c /Users/jonaszell/tblgen/src/Record.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Record.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/TableGen.cpp.o -c /Users/jonaszell/tblgen/src/TableGen.cpp",
+  "file": "/Users/jonaszell/tblgen/src/TableGen.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Type.cpp.o -c /Users/jonaszell/tblgen/src/Type.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Type.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Value.cpp.o -c /Users/jonaszell/tblgen/src/Value.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Value.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Backend/PrintRecords.cpp.o -c /Users/jonaszell/tblgen/src/Backend/PrintRecords.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Backend/PrintRecords.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Backend/EmitClassHierarchy.cpp.o -c /Users/jonaszell/tblgen/src/Backend/EmitClassHierarchy.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Backend/EmitClassHierarchy.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Message/Diagnostics.cpp.o -c /Users/jonaszell/tblgen/src/Message/Diagnostics.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Message/Diagnostics.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Lex/Lexer.cpp.o -c /Users/jonaszell/tblgen/src/Lex/Lexer.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Lex/Lexer.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Lex/Token.cpp.o -c /Users/jonaszell/tblgen/src/Lex/Token.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Lex/Token.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Basic/FileManager.cpp.o -c /Users/jonaszell/tblgen/src/Basic/FileManager.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Basic/FileManager.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Basic/FileUtils.cpp.o -c /Users/jonaszell/tblgen/src/Basic/FileUtils.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Basic/FileUtils.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Basic/IdentifierInfo.cpp.o -c /Users/jonaszell/tblgen/src/Basic/IdentifierInfo.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Basic/IdentifierInfo.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Support/Format.cpp.o -c /Users/jonaszell/tblgen/src/Support/Format.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Support/Format.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Support/LiteralParser.cpp.o -c /Users/jonaszell/tblgen/src/Support/LiteralParser.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Support/LiteralParser.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Message/DiagnosticsEngine.cpp.o -c /Users/jonaszell/tblgen/src/Message/DiagnosticsEngine.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Message/DiagnosticsEngine.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/Support/DynamicLibrary.cpp.o -c /Users/jonaszell/tblgen/src/Support/DynamicLibrary.cpp",
+  "file": "/Users/jonaszell/tblgen/src/Support/DynamicLibrary.cpp"
+},
+{
+  "directory": "/Users/jonaszell/tblgen/build",
+  "command": "/usr/bin/clang++ -I../include  -Wall -std=c++17 -pedantic -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -o CMakeFiles/tblgen.dir/src/TemplateParser.cpp.o -c /Users/jonaszell/tblgen/src/TemplateParser.cpp",
+  "file": "/Users/jonaszell/tblgen/src/TemplateParser.cpp"
+}
+]

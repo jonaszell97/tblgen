@@ -385,7 +385,7 @@ private:
    }
 
    Record(RecordKeeper &RK, SourceLocation declLoc)
-      : RK(RK), declLoc(declLoc), IsAnonymous(true)
+      : RK(RK), name(std::string("<anonymous record ") + std::to_string((uint64_t)this) + ">"), declLoc(declLoc), IsAnonymous(true)
    {
    }
 

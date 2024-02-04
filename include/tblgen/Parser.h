@@ -173,6 +173,12 @@ protected:
 };
 
 class TemplateParser: public Parser {
+   struct Macro
+   {
+      std::vector<std::string> params;
+      std::vector<lex::Token> tokens;
+   };
+
 public:
    TemplateParser(TableGen &TG,
                   const std::string &Buf,
@@ -182,18 +188,13 @@ public:
    TemplateParser(TableGen &TG,
                   const std::vector<lex::Token> &Toks,
                   unsigned sourceId,
-                  unsigned baseOffset);
+                  unsigned baseOffset,
+                  const std::unordered_map<std::string, Macro> &macros);
 
    bool parseTemplate();
    std::string getResult();
 
 private:
-   struct Macro
-   {
-      std::vector<std::string> params;
-      std::vector<lex::Token> tokens;
-   };
-
    std::ostringstream OS;
    std::ostringstream *ActiveOS;
    std::vector<lex::Token> currentTokens;

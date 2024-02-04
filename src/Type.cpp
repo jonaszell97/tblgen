@@ -67,6 +67,9 @@ std::ostream &operator<<(std::ostream &str, Type const* Ty)
    case Type::CodeTypeID:
       str << "code";
       break;
+   case Type::UndefTypeID:
+      str << "undef";
+      break;
    default:
       unreachable("unhandled type");
    }

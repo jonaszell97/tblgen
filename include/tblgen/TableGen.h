@@ -6,6 +6,7 @@
 #include "tblgen/Lex/SourceLocation.h"
 #include "tblgen/Support/Allocator.h"
 #include "tblgen/Type.h"
+#include "tblgen/Value.h"
 
 #include <memory>
 #include <unordered_map>
@@ -90,12 +91,15 @@ private:
 
    mutable StringType StringTy;
    mutable CodeType CodeTy;
+   mutable UndefType UndefTy;
 
    mutable std::unordered_map<Class*, ClassType>   ClassTypes;
    mutable std::unordered_map<Record*, RecordType> RecordTypes;
    mutable std::unordered_map<Enum*, EnumType>     EnumTypes;
    mutable std::unordered_map<Type*, ListType>     ListTypes;
    mutable std::unordered_map<Type*, DictType>     DictTypes;
+
+   mutable UndefValue Undef;
 
 public:
    IntType *getInt1Ty() const { return &Int1Ty; }
@@ -141,6 +145,7 @@ public:
 
    StringType *getStringTy() const { return &StringTy; }
    CodeType *getCodeTy() const { return &CodeTy; }
+   UndefType *getUndefTy() const { return &UndefTy; }
 
    ClassType *getClassType(Class *C) const
    {
@@ -188,6 +193,8 @@ public:
       return &DictTypes.try_emplace(ElementTy,
                                     DictType(ElementTy)).first->second;
    }
+
+   UndefValue *getUndef() const { return &Undef; }
 };
 
 } // namespace tblgen

@@ -18,7 +18,8 @@ TableGen::TableGen(support::ArenaAllocator &Allocator, fs::FileManager &fileMgr,
      Int8Ty(8, false),   UInt8Ty(8, true),
      Int16Ty(16, false), UInt16Ty(16, true),
      Int32Ty(32, false), UInt32Ty(32, true),
-     Int64Ty(64, false), UInt64Ty(64, true)
+     Int64Ty(64, false), UInt64Ty(64, true),
+     Undef(&UndefTy)
 {}
 
 static Value *resolveValue(Value *V,

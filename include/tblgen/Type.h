@@ -25,6 +25,7 @@ public:
       ClassTypeID,
       RecordTypeID,
       EnumTypeID,
+      UndefTypeID,
    };
 
    TypeID getTypeID() const
@@ -98,6 +99,16 @@ public:
 
 private:
    StringType() : Type(StringTypeID)
+   {}
+};
+
+class UndefType: public Type {
+public:
+   static bool classof(Type const* T) { return T->getTypeID() == UndefTypeID; }
+   friend class TableGen;
+
+private:
+   UndefType() : Type(UndefTypeID)
    {}
 };
 
