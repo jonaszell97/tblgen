@@ -539,6 +539,8 @@ public:
 
    Class *lookupClass(const std::string &name) const
    {
+      std::cout << "Looking up class " << name.c_str() << " in namespace " << namespaceName.c_str() << std::endl;
+      
       auto it = Classes.find(name);
       if (it == Classes.end()) {
          if (Parent)
