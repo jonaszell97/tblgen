@@ -204,6 +204,8 @@ int main(int argc, char **argv)
    std::stringstream OS;
 
    auto &RK = *TG.GlobalRK;
+   std::cout << "main.cpp: RK address: " << &RK << "\n";
+
    switch (opts.backend) {
    case B_Custom: {
       std::string errMsg;
@@ -229,6 +231,7 @@ int main(int argc, char **argv)
           = reinterpret_cast<void (*)(std::ostream &, RecordKeeper &)>(
               Ptr);
 
+      std::cout << "main.cpp: RK address #2: " << &RK << "\n";
       Backend(OS, RK);
       break;
    }
