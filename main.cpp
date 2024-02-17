@@ -205,6 +205,7 @@ int main(int argc, char **argv)
 
    auto &RK = *TG.GlobalRK;
    std::cout << "main.cpp: RK address: " << (void*)(&RK) << "\n";
+   std::cout << "main.cpp: RK namespace: " << RK.getNamespaceName() << "\n";
 
    switch (opts.backend) {
    case B_Custom: {
