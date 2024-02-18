@@ -229,10 +229,8 @@ int main(int argc, char **argv)
               Ptr);
 
       RecordKeeper &RK = *TG.GlobalRK;
-      std::cout << "main.cpp: RK address #2: " << (void*)(&RK) << "\n";
-      std::cout << "main.cpp: RK address #2A: " << (void*)(TG.GlobalRK) << "\n";
-      std::cout << "main.cpp: RK namespace #2: " << RK.getNamespaceName() << "\n";
-      std::cout << "main.cpp: RK namespace #2A: " << TG.GlobalRK->getNamespaceName() << "\n";
+      std::cout << "main.cpp: RK size: " << sizeof(RecordKeeper) << "\n";
+      std::cout << "main.cpp: RK align: " << alignof(RecordKeeper) << "\n";
       
       Backend(&OS, TG.GlobalRK);
       break;
