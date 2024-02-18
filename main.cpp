@@ -203,10 +203,6 @@ int main(int argc, char **argv)
    // TblGen crashes
    std::stringstream OS;
 
-   auto &RK = *TG.GlobalRK;
-   std::cout << "main.cpp: RK address: " << (void*)(&RK) << "\n";
-   std::cout << "main.cpp: RK namespace: " << RK.getNamespaceName() << "\n";
-
    switch (opts.backend) {
    case B_Custom: {
       std::string errMsg;
@@ -232,17 +228,25 @@ int main(int argc, char **argv)
           = reinterpret_cast<void (*)(std::ostream &, RecordKeeper &)>(
               Ptr);
 
+      RecordKeeper &RK = *TG.GlobalRK;
       std::cout << "main.cpp: RK address #2: " << (void*)(&RK) << "\n";
+      std::cout << "main.cpp: RK address #2A: " << (void*)(TG.GlobalRK) << "\n";
       std::cout << "main.cpp: RK namespace #2: " << RK.getNamespaceName() << "\n";
+      std::cout << "main.cpp: RK namespace #2A: " << TG.GlobalRK->getNamespaceName() << "\n";
+      
       Backend(OS, RK);
       break;
    }
-   case B_PrintRecords:
+   case B_PrintRecords: {
+      RecordKeeper &RK = *TG.GlobalRK;
       PrintRecords(OS, RK);
       break;
-   case B_EmitClassHierarchy:
+   }
+   case B_EmitClassHierarchy: {
+      RecordKeeper &RK = *TG.GlobalRK;
       EmitClassHierarchy(OS, RK);
       break;
+   }
    case B_Template: {
       if (!opts.backendName.empty() || !opts.customBackendLib.empty()) {
          Diags.Diag(warn_generic_warn)
