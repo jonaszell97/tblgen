@@ -3,11 +3,17 @@ cmake_minimum_required(VERSION 3.7)
 project(TableGen)
 
 # set CXX flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++17 -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -pedantic")
 if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
 endif()
 
+# set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# set Linker flags
 if(UNIX AND NOT APPLE)
     set(linker_flags "-fuse-ld=/usr/bin/ld.lld-12 -Wl,--start-group")
 else()
