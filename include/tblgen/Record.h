@@ -490,13 +490,6 @@ public:
       : TG(TG), namespaceName(namespaceName), declLoc(loc), Parent(Parent)
    {}
 
-   ~RecordKeeper() {
-      std::cout << "RecordKeeper destructor called for namespace "
-         << namespaceName.c_str()
-         << " and address " << (void*)this
-         << std::endl;
-   }
-
    Record *CreateRecord(const std::string &name, SourceLocation loc);
    Class *CreateClass(const std::string &name, SourceLocation loc);
    Enum *CreateEnum(const std::string &name, SourceLocation loc);
@@ -547,8 +540,6 @@ public:
 
    Class *lookupClass(const std::string &name) const
    {
-      std::cout << "Looking up class " << name.c_str() << " in namespace " << namespaceName.c_str() << std::endl;
-
       auto it = Classes.find(name);
       if (it == Classes.end()) {
          if (Parent)

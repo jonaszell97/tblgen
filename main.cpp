@@ -225,14 +225,10 @@ int main(int argc, char **argv)
       }
 
       auto Backend
-          = reinterpret_cast<void (*)(std::ostream *, RecordKeeper *)>(
+          = reinterpret_cast<void (*)(std::ostream &, RecordKeeper &)>(
               Ptr);
 
-      RecordKeeper &RK = *TG.GlobalRK;
-      std::cout << "main.cpp: RK size: " << sizeof(RecordKeeper) << "\n";
-      std::cout << "main.cpp: RK align: " << alignof(RecordKeeper) << "\n";
-      
-      Backend(&OS, TG.GlobalRK);
+      Backend(OS, *TG.GlobalRK);
       break;
    }
    case B_PrintRecords: {
