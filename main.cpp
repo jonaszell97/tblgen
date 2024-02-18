@@ -225,7 +225,7 @@ int main(int argc, char **argv)
       }
 
       auto Backend
-          = reinterpret_cast<void (*)(std::ostream &, RecordKeeper &)>(
+          = reinterpret_cast<void (*)(std::ostream *, RecordKeeper *)>(
               Ptr);
 
       RecordKeeper &RK = *TG.GlobalRK;
@@ -234,7 +234,7 @@ int main(int argc, char **argv)
       std::cout << "main.cpp: RK namespace #2: " << RK.getNamespaceName() << "\n";
       std::cout << "main.cpp: RK namespace #2A: " << TG.GlobalRK->getNamespaceName() << "\n";
       
-      Backend(OS, RK);
+      Backend(&OS, TG.GlobalRK);
       break;
    }
    case B_PrintRecords: {
