@@ -233,6 +233,7 @@ int main(int argc, char **argv)
               Ptr);
 
       std::cout << "main.cpp: RK address #2: " << (void*)(&RK) << "\n";
+      std::cout << "main.cpp: RK namespace #2: " << RK.getNamespaceName() << "\n";
       Backend(OS, RK);
       break;
    }
