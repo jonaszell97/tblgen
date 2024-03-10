@@ -203,7 +203,6 @@ int main(int argc, char **argv)
    // TblGen crashes
    std::stringstream OS;
 
-   auto &RK = *TG.GlobalRK;
    switch (opts.backend) {
    case B_Custom: {
       std::string errMsg;
@@ -229,15 +228,19 @@ int main(int argc, char **argv)
           = reinterpret_cast<void (*)(std::ostream &, RecordKeeper &)>(
               Ptr);
 
-      Backend(OS, RK);
+      Backend(OS, *TG.GlobalRK);
       break;
    }
-   case B_PrintRecords:
+   case B_PrintRecords: {
+      RecordKeeper &RK = *TG.GlobalRK;
       PrintRecords(OS, RK);
       break;
-   case B_EmitClassHierarchy:
+   }
+   case B_EmitClassHierarchy: {
+      RecordKeeper &RK = *TG.GlobalRK;
       EmitClassHierarchy(OS, RK);
       break;
+   }
    case B_Template: {
       if (!opts.backendName.empty() || !opts.customBackendLib.empty()) {
          Diags.Diag(warn_generic_warn)
