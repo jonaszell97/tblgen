@@ -28,7 +28,7 @@ Parser::Parser(TableGen &TG,
                unsigned baseOffset)
    : TG(TG), lex(TG.getIdents(), TG.Diags, Buf, sourceId,
                  baseOffset, '\0'),
-     RK(TG.GlobalRK.get())
+     RK(TG.GlobalRK)
 {
    TG.getIdents().addTblGenKeywords();
 }
@@ -38,7 +38,7 @@ Parser::Parser(TableGen &TG,
                unsigned sourceId,
                unsigned baseOffset)
    : TG(TG), lex(TG.getIdents(), TG.Diags, Toks, sourceId, baseOffset),
-     RK(TG.GlobalRK.get())
+     RK(TG.GlobalRK)
 {
    TG.getIdents().addTblGenKeywords();
 }

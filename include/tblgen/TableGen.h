@@ -71,7 +71,7 @@ public:
    support::ArenaAllocator &Allocator;
    fs::FileManager &fileMgr;
    DiagnosticsEngine &Diags;
-   std::unique_ptr<RecordKeeper> GlobalRK;
+   RecordKeeper* GlobalRK;
 
 private:
    mutable IdentifierTable Idents;
